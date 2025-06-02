@@ -185,7 +185,7 @@ class FluxService:
                     logger.error(error_msg)
                     raise Exception(error_msg)
                 
-                elif status in ["Processing", "Queued"]:
+                elif status in ["Processing", "Queued", "Pending"]:
                     # 継続してポーリング
                     time.sleep(self.polling_interval)
                 else:

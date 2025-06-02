@@ -516,4 +516,42 @@ def search_gallery():
         return jsonify({
             'success': False,
             'error': '検索に失敗しました'
+        }), 500
+
+
+@api_bp.route('/session/init', methods=['POST'])
+@limiter.limit("30 per hour")
+def init_session():
+    """
+    セッション初期化エンドポイント
+    
+    Returns:
+        JSON: 新規セッション情報
+    """
+    try:
+        # 既存セッションを強制リセット
+        if 'user_id' in session:
+            session.pop('user_id', None)
+        
+        # 新規セッション作成
+        user_id = session_service.create_user_session()
+        session['user_id'] = user_id
+        session.permanent = True
+        
+        logger.info(f"セッション強制初期化: {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'セッションを初期化しました',
+            'data': {
+                'user_id': user_id[:8] + "...",  # セキュリティのため一部のみ表示
+                'session_created': True
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"セッション初期化エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'セッション初期化に失敗しました'
         }), 500 

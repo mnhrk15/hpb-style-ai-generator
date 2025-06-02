@@ -27,16 +27,35 @@ def upload_file():
         JSON: アップロード結果
     """
     try:
-        # セッション確認・初期化
+        logger.info(f"=== アップロード開始 ===")
+        logger.info(f"Request files: {list(request.files.keys())}")
+        logger.info(f"Request form: {dict(request.form)}")
+        logger.info(f"Content-Type: {request.content_type}")
+        logger.info(f"Current session: {dict(session)}")
+        
+        # セッション確認・自動作成
         user_id = session.get('user_id')
         if not user_id:
-            import uuid
-            user_id = str(uuid.uuid4())
+            # セッションサービスで新規作成（IDも自動生成）
+            user_id = session_service.create_user_session()
             session['user_id'] = user_id
-            session_service.create_user_session(f"User_{user_id[:8]}")
+            session.permanent = True  # セッションを永続化
+            logger.info(f"新規セッション作成（アップロード時）: {user_id}")
+        else:
+            # セッションデータの存在確認
+            session_data = session_service.get_session_data(user_id, update_activity=False)
+            if not session_data:
+                # セッションデータが失われている場合は再作成
+                user_id = session_service.create_user_session()
+                session['user_id'] = user_id
+                session.permanent = True
+                logger.info(f"セッションデータ再作成（アップロード時）: {user_id}")
+            else:
+                logger.info(f"既存セッション使用: {user_id}")
         
         # ファイル存在確認
         if 'file' not in request.files:
+            logger.warning(f"ファイルアップロード失敗 - ファイル未選択: {user_id}")
             return jsonify({
                 'success': False,
                 'error': 'ファイルが選択されていません'
@@ -44,22 +63,35 @@ def upload_file():
         
         file = request.files['file']
         if file.filename == '':
+            logger.warning(f"ファイルアップロード失敗 - 空のファイル名: {user_id}")
             return jsonify({
                 'success': False,
                 'error': 'ファイルが選択されていません'
             }), 400
         
         # ファイル保存処理
+        logger.info(f"ファイル保存処理開始: {file.filename}")
         success, file_path, file_info = file_service.save_uploaded_file(
             file, user_id, optimize=True
         )
         
         if success:
+            logger.info(f"ファイル保存成功: {file_path}")
+            
             # セッションに追加
-            session_service.add_uploaded_file(user_id, file_info)
+            try:
+                session_service.add_uploaded_file(user_id, file_info)
+                logger.info("セッションへのファイル情報追加成功")
+            except Exception as session_error:
+                logger.warning(f"セッション更新エラー: {session_error}")
             
             # 画像特徴分析
-            features = file_service.analyze_image_features(file_path)
+            try:
+                features = file_service.analyze_image_features(file_path)
+                logger.info(f"画像特徴分析完了: {features}")
+            except Exception as feature_error:
+                logger.warning(f"画像特徴分析エラー: {feature_error}")
+                features = {}
             
             logger.info(f"ファイルアップロード成功: {user_id} - {file.filename}")
             
@@ -74,7 +106,8 @@ def upload_file():
                 }
             })
         else:
-            error_msg = file_info.get('error', 'アップロードに失敗しました')
+            logger.error(f"ファイル保存失敗: {file_info}")
+            error_msg = file_info.get('error', 'アップロードに失敗しました') if file_info else 'アップロードに失敗しました'
             return jsonify({
                 'success': False,
                 'error': error_msg

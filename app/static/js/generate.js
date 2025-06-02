@@ -80,10 +80,32 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => {
             currentTaskId = response.data.data.task_id;
             showAlert('success', 'ヘアスタイル生成を開始しました');
+            
+            // フォールバック：定期的に結果をポーリング
+            setTimeout(() => {
+                pollGenerationStatus();
+            }, 5000); // 5秒後から開始
         })
         .catch(error => {
             console.error('Generation error:', error);
-            showAlert('error', error.response?.data?.error || '生成開始に失敗しました');
+            
+            if (error.response?.status === 429) {
+                showAlert('error', '制限に達しています。しばらくお待ちください。');
+            } else if (error.response?.status === 401) {
+                showAlert('warning', 'セッションを復旧しています...');
+                // セッション復旧を試行
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else if (error.response?.data?.error?.includes('セッション')) {
+                showAlert('warning', 'セッションエラーを検出。自動復旧中...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('error', error.response?.data?.error || '生成開始に失敗しました');
+            }
+            
             resetGeneration();
         });
     }
@@ -125,7 +147,42 @@ document.addEventListener('DOMContentLoaded', function() {
         resultSection?.classList.remove('hidden');
         resultSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // 統計更新
+        // 生成状態ポーリング（SocketIO未接続時用）
+    function pollGenerationStatus() {
+        if (!currentTaskId || !isGenerating) return;
+        
+        axios.get(`/generate/history`)
+        .then(response => {
+            if (response.data.success) {
+                const data = response.data.data;
+                const generatedImages = data.generated_images || [];
+                
+                // 現在のタスクIDの結果を確認
+                const currentResult = generatedImages.find(img => 
+                    img.task_id === currentTaskId
+                );
+                
+                if (currentResult) {
+                    // 生成完了
+                    showResult({
+                        generated_path: currentResult.generated_path
+                    });
+                } else if (isGenerating) {
+                    // まだ生成中、再度ポーリング
+                    setTimeout(pollGenerationStatus, 3000);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Polling error:', error);
+            if (isGenerating) {
+                // エラー時も再試行
+                setTimeout(pollGenerationStatus, 5000);
+            }
+        });
+    }
+
+    // 統計更新
         updateStats();
     }
     

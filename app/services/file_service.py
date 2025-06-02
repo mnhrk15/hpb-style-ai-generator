@@ -41,8 +41,13 @@ class FileService:
             tuple: (検証成功可否, エラーメッセージ)
         """
         try:
+            logger.info(f"=== ファイルバリデーション開始 ===")
+            logger.info(f"File object: {file}")
+            logger.info(f"File filename: {getattr(file, 'filename', 'None')}")
+            
             # ファイル存在確認
             if not file or not file.filename:
+                logger.warning("ファイル存在確認失敗")
                 return False, "ファイルが選択されていません"
             
             # ファイル名拡張子確認

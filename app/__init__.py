@@ -75,35 +75,33 @@ def create_app(config_object=None):
     # CSRF保護
     csrf.init_app(app)
     
-    # API エンドポイントはCSRF無効化
-    csrf.exempt('api.upload_file')
-    csrf.exempt('api.generate_image')
-    csrf.exempt('api.get_result')
-    csrf.exempt('api.get_session_info')
-    csrf.exempt('api.get_stats')
-    csrf.exempt('api.delete_image')
-    csrf.exempt('api.search_gallery')
-    
     # レート制限設定
     limiter.init_app(app)
     
     # Redis接続確認とフォールバック
+    redis_available = False
     try:
         redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
         redis_client = redis.from_url(redis_url)
         redis_client.ping()
         app.config['RATELIMIT_STORAGE_URL'] = redis_url
+        redis_available = True
     except (redis.ConnectionError, redis.TimeoutError) as e:
         app.logger.warning(f"Redis接続失敗: {e}, メモリベースレート制限を使用")
         # Redis接続失敗時はメモリベースにフォールバック
     
-    # SocketIO初期化
-    socketio.init_app(
-        app,
-        cors_allowed_origins="*",
-        async_mode='eventlet',
-        message_queue=os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    )
+    # SocketIO初期化（Redis利用可能時のみmessage_queueを設定）
+    socketio_config = {
+        'cors_allowed_origins': "*",
+        'async_mode': 'eventlet'
+    }
+    
+    if redis_available:
+        socketio_config['message_queue'] = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    else:
+        app.logger.warning("Redis未接続: SocketIOはシングルプロセスモードで動作")
+    
+    socketio.init_app(app, **socketio_config)
     
     # 静的ファイルディレクトリの作成
     upload_folder = os.path.join(app.instance_path, '..', app.config.get('UPLOAD_FOLDER', 'app/static/uploads'))
@@ -122,6 +120,16 @@ def create_app(config_object=None):
     app.register_blueprint(upload_bp, url_prefix='/upload')
     app.register_blueprint(generate_bp, url_prefix='/generate')
     app.register_blueprint(api_bp, url_prefix='/api')
+    
+    # Blueprint登録後にCSRF除外を設定
+    # APIエンドポイント除外
+    csrf.exempt(api_bp)
+    
+    # アップロードエンドポイント除外
+    csrf.exempt(upload_bp)
+    
+    # 生成エンドポイント除外
+    csrf.exempt(generate_bp)
     
     # SocketIOイベントハンドラーを有効化するために
     # generate.pyの関数をインポート（これによりデコレーターが実行される）

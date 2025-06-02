@@ -93,14 +93,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ファイルアップロード
     function uploadFile(file) {
+        console.log('=== アップロード開始 ===');
+        console.log('File:', file);
+        console.log('File type:', file.type);
+        console.log('File size:', file.size);
+        
         const formData = new FormData();
         formData.append('file', file);
         
-        axios.post('/upload/', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
+        // FormDataを使用する際は、Content-Typeヘッダーを設定しない
+        // ブラウザが自動的に適切なboundaryを含めて設定する
+        const config = {
+            timeout: 30000  // 30秒タイムアウト
+        };
+        
+        // CSRFトークンを取得（exemptにしているが念のため）
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            config.headers = {
+                'X-CSRFToken': csrfToken.getAttribute('content')
+            };
+        }
+        
+        console.log('Axios config:', config);
+        
+        axios.post('/upload/', formData, config)
         .then(response => {
             const data = response.data.data;
             currentFilePath = data.file_path;
@@ -110,8 +127,21 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Upload error:', error);
-            showAlert('error', error.response?.data?.error || 'アップロードに失敗しました');
-            clearFile();
+            
+            if (error.response?.status === 401) {
+                showAlert('warning', 'セッションを復旧しています...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else if (error.response?.data?.error?.includes('セッション')) {
+                showAlert('warning', 'セッションエラーを検出。自動復旧中...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('error', error.response?.data?.error || 'アップロードに失敗しました');
+                clearFile();
+            }
         });
     }
     
