@@ -7,7 +7,7 @@ import os
 import eventlet
 eventlet.monkey_patch(all=False, socket=True)
 
-from flask import Flask, current_app
+from flask import Flask, current_app, send_from_directory
 from flask_socketio import SocketIO
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -109,6 +109,19 @@ def create_app(config_object=None):
     
     os.makedirs(upload_folder, exist_ok=True)
     os.makedirs(generated_folder, exist_ok=True)
+    
+    # 静的ファイル配信ルート
+    @app.route('/static/uploads/<path:filename>')
+    def uploaded_file(filename):
+        """アップロード画像の配信"""
+        upload_path = os.path.join(app.instance_path, '..', app.config.get('UPLOAD_FOLDER', 'app/static/uploads'))
+        return send_from_directory(upload_path, filename)
+    
+    @app.route('/static/generated/<path:filename>')
+    def generated_file(filename):
+        """生成画像の配信"""
+        generated_path = os.path.join(app.instance_path, '..', app.config.get('GENERATED_FOLDER', 'app/static/generated'))
+        return send_from_directory(generated_path, filename)
     
     # Blueprintの登録
     from app.routes.main import main_bp

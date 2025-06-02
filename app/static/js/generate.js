@@ -141,13 +141,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (beforeImage && afterImage) {
             beforeImage.src = window.UploadManager?.getCurrentFilePath() || '';
-            afterImage.src = result.generated_path || '';
+            
+            // generated_pathを正しいURLに変換
+            let generatedUrl = result.generated_path || '';
+            if (generatedUrl.startsWith('app/')) {
+                generatedUrl = generatedUrl.replace('app/', '/');
+            } else if (!generatedUrl.startsWith('/')) {
+                generatedUrl = '/' + generatedUrl;
+            }
+            
+            afterImage.src = generatedUrl;
+            
+            // デバッグログ
+            console.log('Generated image URL:', generatedUrl);
         }
         
         resultSection?.classList.remove('hidden');
         resultSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // 生成状態ポーリング（SocketIO未接続時用）
+        // 統計更新
+        updateStats();
+    }
+    
+    // 生成状態ポーリング（SocketIO未接続時用）
     function pollGenerationStatus() {
         if (!currentTaskId || !isGenerating) return;
         
@@ -180,10 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(pollGenerationStatus, 5000);
             }
         });
-    }
-
-    // 統計更新
-        updateStats();
     }
     
     // ダウンロードボタン
