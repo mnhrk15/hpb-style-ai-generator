@@ -1,0 +1,349 @@
+# Hair Style AI Generator - Git Ignore Rules
+
+# ===== Python関連 =====
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff (for future expansion)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ===== Hair Style AI Generator 固有 =====
+# 環境変数ファイル（実際のAPIキー含む）
+.env
+.env.local
+.env.production
+.env.staging
+
+# アップロード・生成画像
+app/static/uploads/*
+app/static/generated/*
+!app/static/uploads/.gitkeep
+!app/static/generated/.gitkeep
+
+# ログファイル
+*.log
+logs/
+hair_style_generator.log
+
+# Redis データ
+dump.rdb
+redis_data/
+
+# セッションファイル
+flask_session/
+
+# 一時ファイル
+temp/
+tmp/
+*.tmp
+
+# AI API テスト画像
+test_images/
+sample_images/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+!test_image.png  # サンプル画像は保持
+
+# ===== IDE・エディタ =====
+# Visual Studio Code
+.vscode/
+.history/
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===== OS固有 =====
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===== Docker関連 =====
+# Docker Compose override
+docker-compose.override.yml
+
+# Docker volumes data
+docker/data/
+docker/logs/
+docker/ssl/
+
+# ===== Nginx関連 =====
+# SSL certificates
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Nginx logs
+nginx_logs/
+access.log
+error.log
+
+# ===== Monitoring・Analytics =====
+# Prometheus data
+prometheus_data/
+
+# Grafana data
+grafana_data/
+
+# ===== バックアップ・アーカイブ =====
+*.bak
+*.backup
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Database backups
+*.sql
+*.db
+
+# ===== セキュリティ関連 =====
+# API keys and secrets
+secrets/
+credentials/
+*.key
+api_keys.json
+
+# SSH keys
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+
+# ===== 開発・テスト関連 =====
+# Load testing results
+locust_reports/
+load_test_results/
+
+# Performance profiling
+*.prof
+profiling_results/
+
+# Memory dumps
+*.dmp
+core.*
+
+# ===== Documentation builds =====
+# Sphinx builds
+docs/build/
+docs/dist/
+
+# MkDocs
+/site/
+
+# ===== Node.js (将来のフロントエンド拡張用) =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# ===== 特定ツール =====
+# Coverage reports
+.coverage
+coverage/
+.nyc_output
+
+# ESLint cache
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# ===== 設定ファイルの例外 =====
+# サンプル設定ファイルは保持
+!.env.example
+!docker-compose.example.yml
+!nginx.example.conf 

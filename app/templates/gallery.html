@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}ギャラリー - Hair Style AI Generator{% endblock %}
+
+{% block content %}
+<!-- ヘッダー -->
+<div class="max-w-4xl mx-auto text-center mb-12">
+    <h1 class="text-4xl font-light text-slate-900 mb-4">ギャラリー</h1>
+    <p class="text-lg text-slate-600">これまでに生成されたヘアスタイル</p>
+</div>
+
+<!-- メインコンテンツ -->
+<div class="max-w-6xl mx-auto">
+    
+    <!-- 統計情報 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.total_generations or 0 }}</div>
+            <div class="text-sm text-slate-500">総生成数</div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.today_generations or 0 }}</div>
+            <div class="text-sm text-slate-500">今日の生成数</div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.daily_limit_remaining or 200 }}</div>
+            <div class="text-sm text-slate-500">残り生成可能数</div>
+        </div>
+    </div>
+    
+    <!-- 画像グリッド -->
+    {% if generated_images and generated_images|length > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for image in generated_images %}
+        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <!-- 画像比較 -->
+            <div class="grid grid-cols-2 gap-0">
+                <!-- Before -->
+                <div class="relative aspect-square bg-slate-50">
+                    <img src="{{ image.original_path }}" alt="変更前" class="w-full h-full object-cover">
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">変更前</span>
+                    </div>
+                </div>
+                
+                <!-- After -->
+                <div class="relative aspect-square bg-slate-50">
+                    <img src="{{ image.generated_path }}" alt="変更後" class="w-full h-full object-cover">
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">変更後</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 詳細情報 -->
+            <div class="p-6">
+                <h3 class="font-medium text-slate-900 mb-2">{{ image.original_filename }}</h3>
+                {% if image.prompt %}
+                <p class="text-sm text-slate-600 mb-3 line-clamp-2">{{ image.prompt }}</p>
+                {% endif %}
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span>{{ image.generated_at.strftime('%Y年%m月%d日 %H:%M') if image.generated_at else '' }}</span>
+                    <div class="flex space-x-2">
+                        <button onclick="downloadImage('{{ image.generated_path }}', '{{ image.original_filename }}')" 
+                                class="text-slate-600 hover:text-slate-900 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="viewFullsize('{{ image.generated_path }}', '{{ image.original_filename }}')" 
+                                class="text-slate-600 hover:text-slate-900 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- ページネーション（必要に応じて） -->
+    {% if has_more %}
+    <div class="text-center mt-12">
+        <button id="load-more" class="px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+            さらに読み込む
+        </button>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- 空の状態 -->
+    <div class="text-center py-20">
+        <div class="w-20 h-20 mx-auto mb-6 bg-slate-100 rounded-full flex items-center justify-center">
+            <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-medium text-slate-900 mb-3">まだ画像がありません</h3>
+        <p class="text-slate-600 mb-8">ヘアスタイルを生成すると、ここに表示されます</p>
+        <a href="{{ url_for('main.index') }}" class="inline-flex items-center px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+            最初の画像を生成する
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- フルスクリーンモーダル -->
+<div id="fullscreen-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+    <div class="relative max-w-4xl max-h-full">
+        <img id="fullscreen-image" class="max-w-full max-h-full object-contain rounded-xl" alt="フルサイズ表示">
+        <button onclick="closeFullscreen()" class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ギャラリー機能
+function downloadImage(imageUrl, filename) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = filename.replace(/\.[^/.]+$/, "") + '_generated.jpg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification('success', '画像をダウンロードしました');
+}
+
+function viewFullsize(imageUrl, filename) {
+    const modal = document.getElementById('fullscreen-modal');
+    const image = document.getElementById('fullscreen-image');
+    
+    image.src = imageUrl;
+    image.alt = filename;
+    modal.classList.remove('hidden');
+    
+    // ESCキーで閉じる
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeFullscreen();
+        }
+    });
+}
+
+function closeFullscreen() {
+    const modal = document.getElementById('fullscreen-modal');
+    modal.classList.add('hidden');
+}
+
+// モーダル背景クリックで閉じる
+document.getElementById('fullscreen-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeFullscreen();
+    }
+});
+
+// さらに読み込む機能
+const loadMoreBtn = document.getElementById('load-more');
+if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function() {
+        // 実装予定: ページネーション
+        showNotification('info', 'さらに読み込み機能は準備中です');
+    });
+}
+</script>
+{% endblock %} 

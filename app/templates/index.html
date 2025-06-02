@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Hair Style AI Generator{% endblock %}
+
+{% block content %}
+<!-- メインヒーローセクション -->
+<div class="max-w-4xl mx-auto text-center mb-16">
+    <h1 class="text-5xl md:text-6xl font-light text-slate-900 mb-6">
+        Hair Style AI
+    </h1>
+    <p class="text-xl text-slate-600 mb-8 font-light">
+        最新AIで、瞬時にヘアスタイルを変更
+    </p>
+</div>
+
+<!-- メインコンテンツ -->
+<div class="max-w-2xl mx-auto">
+    
+    <!-- 画像アップロード -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8">
+        <div id="upload-area" class="relative">
+            <!-- ドロップゾーン -->
+            <div id="drop-zone" class="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">
+                <div id="drop-content">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-900 mb-2">画像をドロップまたは選択</h3>
+                    <p class="text-sm text-slate-500 mb-4">JPG, PNG, WebP（最大10MB）</p>
+                    <button type="button" class="inline-flex items-center px-6 py-3 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors">
+                        ファイル選択
+                    </button>
+                </div>
+                
+                <!-- アップロード中 -->
+                <div id="upload-progress" class="hidden">
+                    <div class="animate-spin w-8 h-8 mx-auto mb-4">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-slate-600">アップロード中...</p>
+                </div>
+                
+                <!-- プレビュー -->
+                <div id="image-preview" class="hidden">
+                    <img id="preview-image" class="max-w-full h-48 object-cover rounded-xl mx-auto mb-4" alt="プレビュー">
+                    <p class="text-sm text-slate-500" id="file-name">ファイル名</p>
+                    <button id="remove-image" class="mt-2 text-sm text-slate-400 hover:text-slate-600">削除</button>
+                </div>
+            </div>
+            
+            <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/jpg,image/png,image/webp">
+        </div>
+    </div>
+    
+    <!-- プロンプト入力 -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8">
+        <form id="generation-form">
+            <div class="mb-6">
+                <label for="prompt-input" class="block text-sm font-medium text-slate-700 mb-3">
+                    どのように変更しますか？
+                </label>
+                <textarea 
+                    id="prompt-input" 
+                    class="w-full px-4 py-3 border border-slate-200 rounded-xl resize-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                    rows="3"
+                    placeholder="例：ショートボブに変更して、髪色を茶色にしてください"
+                    maxlength="300"
+                    required
+                ></textarea>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-xs text-slate-400">自然な日本語で詳しく説明してください</span>
+                    <span id="char-count" class="text-xs text-slate-400">0/300</span>
+                </div>
+            </div>
+            
+            <!-- クイック選択 -->
+            <div class="mb-8">
+                <p class="text-sm text-slate-500 mb-3">よく使われるスタイル：</p>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ショートボブに変更してください">
+                        ショートボブ
+                    </button>
+                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ロングヘアにして、ゆるいウェーブをかけてください">
+                        ロングウェーブ
+                    </button>
+                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="髪色を明るい茶色に変更してください">
+                        明るい茶色
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 生成ボタン -->
+            <button type="submit" id="generate-btn" class="w-full py-4 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
+                <span id="btn-text">画像をアップロードしてください</span>
+            </button>
+        </form>
+    </div>
+    
+    <!-- 生成結果 -->
+    <div id="result-section" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <h2 class="text-xl font-medium text-slate-900 mb-6 text-center">生成結果</h2>
+        
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <div>
+                <p class="text-sm text-slate-500 mb-2 text-center">変更前</p>
+                <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                    <img id="before-image" class="w-full h-full object-cover" alt="変更前">
+                </div>
+            </div>
+            <div>
+                <p class="text-sm text-slate-500 mb-2 text-center">変更後</p>
+                <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                    <img id="after-image" class="w-full h-full object-cover" alt="変更後">
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-center gap-4">
+            <button id="download-btn" class="px-6 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+                ダウンロード
+            </button>
+            <button id="new-generation-btn" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+                新しい生成
+            </button>
+        </div>
+    </div>
+    
+    <!-- 生成中ステータス -->
+    <div id="generation-status" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div class="text-center">
+            <div class="w-12 h-12 mx-auto mb-4">
+                <div class="animate-spin w-12 h-12">
+                    <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+            <h3 id="status-title" class="text-lg font-medium text-slate-900 mb-2">画像を生成中...</h3>
+            <p id="status-message" class="text-sm text-slate-500">しばらくお待ちください（通常60-180秒）</p>
+        </div>
+    </div>
+</div>
+
+<!-- 統計情報（最下部にシンプルに配置） -->
+<div class="max-w-md mx-auto mt-16">
+    <div class="bg-slate-50 rounded-2xl p-6">
+        <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+                <div class="text-2xl font-bold text-slate-900" id="today-count">{{ stats.today_generations or 0 }}</div>
+                <div class="text-xs text-slate-500">今日</div>
+            </div>
+            <div>
+                <div class="text-2xl font-bold text-slate-900" id="total-count">{{ stats.total_generations or 0 }}</div>
+                <div class="text-xs text-slate-500">総計</div>
+            </div>
+            <div>
+                <div class="text-2xl font-bold text-slate-900" id="remaining-count">{{ stats.daily_limit_remaining or 200 }}</div>
+                <div class="text-xs text-slate-500">残り</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/generate.js') }}"></script>
+{% endblock %} 

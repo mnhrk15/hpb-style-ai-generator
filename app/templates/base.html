@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hair Style AI Generator{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'slate': {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💇</text></svg>">
+    
+    <style>
+        /* カスタムスタイル */
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        /* スムーズスクロール */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* フォーカススタイル */
+        .focus\\:ring-2:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+        }
+        
+        /* カスタムアニメーション */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* トランジション */
+        * {
+            transition-duration: 0.2s;
+            transition-timing-function: ease-out;
+        }
+        
+        /* ドロップシャドウ */
+        .shadow-custom {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+        }
+    </style>
+</head>
+
+<body class="h-full bg-slate-50 text-slate-900">
+    <!-- メインコンテナ -->
+    <div class="min-h-full">
+        <!-- ヘッダー（シンプル） -->
+        <header class="bg-white border-b border-slate-100">
+            <div class="max-w-6xl mx-auto px-6 py-6">
+                <div class="flex items-center justify-between">
+                    <a href="{{ url_for('main.index') }}" class="text-xl font-medium text-slate-900 hover:text-slate-700 transition-colors">
+                        Hair Style AI
+                    </a>
+                    
+                    <!-- ナビゲーション（最小限） -->
+                    {% if session.user_id %}
+                    <div class="flex items-center space-x-6">
+                        <span class="text-sm text-slate-500">{{ session.user_name }}</span>
+                        <a href="{{ url_for('main.gallery') }}" class="text-sm text-slate-600 hover:text-slate-900 transition-colors">ギャラリー</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+        
+        <!-- メインコンテンツ -->
+        <main class="py-12 px-6">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <!-- フッター（最小限） -->
+        <footer class="border-t border-slate-100 bg-white">
+            <div class="max-w-6xl mx-auto px-6 py-8">
+                <div class="text-center">
+                    <p class="text-sm text-slate-400">
+                        &copy; 2024 Hair Style AI Generator. Powered by FLUX.1 Kontext & Gemini AI.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- 通知エリア -->
+    <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- 設定データ -->
+    <div id="app-config" 
+         data-max-file-size="{{ config.MAX_CONTENT_LENGTH or 10485760 }}"
+         data-max-file-size-mb="{{ (config.MAX_CONTENT_LENGTH / 1024 / 1024)|round(1) if config.MAX_CONTENT_LENGTH else 10 }}"
+         style="display: none;"></div>
+    
+    <!-- 共通JavaScript -->
+    <script>
+        // Socket.IO接続
+        const socket = io();
+        
+        // 設定データを読み取り
+        const configElement = document.getElementById('app-config');
+        window.HairStyleApp = {
+            config: {
+                maxFileSize: parseInt(configElement.dataset.maxFileSize),
+                maxFileSizeMB: parseFloat(configElement.dataset.maxFileSizeMb),
+                supportedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+            }
+        };
+        
+        // 通知表示機能
+        function showNotification(type, message) {
+            const notifications = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            
+            const colors = {
+                'success': 'bg-green-50 border-green-200 text-green-800',
+                'error': 'bg-red-50 border-red-200 text-red-800',
+                'info': 'bg-blue-50 border-blue-200 text-blue-800',
+                'warning': 'bg-yellow-50 border-yellow-200 text-yellow-800'
+            };
+            
+            notification.className = `${colors[type]} border rounded-xl px-4 py-3 shadow-sm animate-fadeIn min-w-80`;
+            notification.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium">${message}</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-current opacity-50 hover:opacity-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            notifications.appendChild(notification);
+            
+            // 5秒後に自動削除
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // showAlert関数（既存コードとの互換性）
+        window.showAlert = showNotification;
+        
+        // Socket.IO接続確認
+        socket.on('connect', function() {
+            console.log('Socket.IO connected');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Socket.IO disconnected');
+        });
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        // Axiosのデフォルト設定
+        axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        
+        // レスポンシブデザイン確認
+        function checkMobile() {
+            return window.innerWidth < 768;
+        }
+        
+        // ページ読み込み完了時
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Hair Style AI Generator loaded');
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
