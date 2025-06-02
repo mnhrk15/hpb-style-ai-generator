@@ -23,14 +23,23 @@ def index():
         HTML: アップロード・生成フォーム
     """
     try:
-        # ユーザーセッション確認・作成
+        # ユーザーセッション確認・自動作成
         user_id = session.get('user_id')
         if not user_id:
             user_id = session_service.create_user_session()
             session['user_id'] = user_id
+            session.permanent = True  # セッション永続化
+            logger.info(f"新規セッション作成（メインページ）: {user_id}")
         
-        # セッションデータ取得
-        session_data = session_service.get_session_data(user_id)
+        # セッションデータ取得・確認
+        session_data = session_service.get_session_data(user_id, update_activity=True)
+        if not session_data:
+            # セッションデータが失われている場合は再作成
+            user_id = session_service.create_user_session()
+            session['user_id'] = user_id
+            session.permanent = True
+            session_data = session_service.get_session_data(user_id, update_activity=False)
+            logger.info(f"セッションデータ再作成（メインページ）: {user_id}")
         
         # 統計情報作成
         stats = {
@@ -62,14 +71,23 @@ def gallery():
         HTML: 生成画像一覧
     """
     try:
-        # ユーザーセッション確認・作成
+        # ユーザーセッション確認・自動作成
         user_id = session.get('user_id')
         if not user_id:
             user_id = session_service.create_user_session()
             session['user_id'] = user_id
+            session.permanent = True  # セッション永続化
+            logger.info(f"新規セッション作成（ギャラリー）: {user_id}")
         
-        # セッションデータ取得
-        session_data = session_service.get_session_data(user_id)
+        # セッションデータ取得・確認
+        session_data = session_service.get_session_data(user_id, update_activity=True)
+        if not session_data:
+            # セッションデータが失われている場合は再作成
+            user_id = session_service.create_user_session()
+            session['user_id'] = user_id
+            session.permanent = True
+            session_data = session_service.get_session_data(user_id, update_activity=False)
+            logger.info(f"セッションデータ再作成（ギャラリー）: {user_id}")
         
         # 生成画像履歴取得
         images = []
@@ -110,13 +128,29 @@ def gallery():
             # 新しい順にソート
             images.sort(key=lambda x: x['generated_at'], reverse=True)
         
+        # 統計情報作成
+        stats = {
+            'today_generations': session_data.get('daily_generation_count', 0) if session_data else 0,
+            'total_generations': session_data.get('total_generation_count', 0) if session_data else 0,
+            'daily_limit_remaining': current_app.config.get('USER_DAILY_LIMIT', 50) - (session_data.get('daily_generation_count', 0) if session_data else 0)
+        }
+        
+        # 負の値を0に制限
+        stats['daily_limit_remaining'] = max(0, stats['daily_limit_remaining'])
+        
         logger.info(f"ギャラリー表示: {len(images)}枚の画像")
         
-        return render_template('gallery.html', images=images)
+        return render_template('gallery.html', images=images, generated_images=images, stats=stats)
         
     except Exception as e:
         logger.error(f"ギャラリーページエラー: {e}")
-        return render_template('gallery.html', images=[])
+        # エラー時のデフォルト統計
+        default_stats = {
+            'today_generations': 0,
+            'total_generations': 0,
+            'daily_limit_remaining': current_app.config.get('USER_DAILY_LIMIT', 50)
+        }
+        return render_template('gallery.html', images=[], generated_images=[], stats=default_stats)
 
 
 @main_bp.route('/help')

@@ -74,7 +74,10 @@ redis-server
 # Celeryワーカー起動（別ターミナル）
 celery -A app.celery worker --loglevel=info
 
-# アプリケーション起動
+# アプリケーション起動（推奨: SocketIOサーバー使用）
+python dev-start.py
+
+# または通常の起動方法
 python run.py
 ```
 

@@ -31,14 +31,21 @@ class SessionService:
         """Redis接続初期化"""
         try:
             redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-            self.redis_client = redis.from_url(redis_url, decode_responses=True)
+            self.redis_client = redis.from_url(
+                redis_url, 
+                decode_responses=True,
+                socket_timeout=2,  # 2秒タイムアウト
+                socket_connect_timeout=2,
+                retry_on_timeout=True,
+                health_check_interval=30
+            )
             
             # 接続テスト
             self.redis_client.ping()
             logger.info("Redis接続初期化完了")
             
         except Exception as e:
-            logger.warning(f"Redis接続失敗: {e}")
+            logger.warning(f"Redis接続失敗（フォールバックモード使用）: {e}")
             self.redis_client = None
     
     def create_user_session(self, user_name: Optional[str] = None) -> str:
@@ -79,12 +86,13 @@ class SessionService:
         
         return session_id
     
-    def get_session_data(self, session_id: str) -> Optional[Dict]:
+    def get_session_data(self, session_id: str, update_activity: bool = False) -> Optional[Dict]:
         """
         セッションデータ取得
         
         Args:
             session_id (str): セッションID
+            update_activity (bool): 最終アクティビティ更新するか
             
         Returns:
             dict: セッションデータ
@@ -99,8 +107,12 @@ class SessionService:
             
             if data:
                 session_data = json.loads(data)
-                # 最終アクティビティ更新
-                self.update_last_activity(session_id)
+                
+                # 明示的に指定された場合のみアクティビティ更新
+                if update_activity:
+                    session_data["last_activity"] = datetime.utcnow().isoformat()
+                    self.redis_client.setex(key, self.session_timeout, json.dumps(session_data))
+                
                 return session_data
             else:
                 logger.warning(f"セッションが見つかりません: {session_id}")
@@ -126,14 +138,15 @@ class SessionService:
         
         try:
             key = f"session:{session_id}"
-            current_data = self.get_session_data(session_id)
+            # 無限再帰防止: アクティビティ更新なしで取得
+            current_data = self.get_session_data(session_id, update_activity=False)
             
             if current_data:
                 # データをマージ
                 current_data.update(data)
                 current_data["last_activity"] = datetime.utcnow().isoformat()
                 
-                # Redis更新
+                # Redis更新（タイムアウト設定付き）
                 self.redis_client.setex(
                     key,
                     self.session_timeout,
@@ -159,7 +172,7 @@ class SessionService:
         Returns:
             bool: 追加成功可否
         """
-        session_data = self.get_session_data(session_id)
+        session_data = self.get_session_data(session_id, update_activity=False)
         if not session_data:
             return False
         
@@ -185,7 +198,7 @@ class SessionService:
         Returns:
             bool: 追加成功可否
         """
-        session_data = self.get_session_data(session_id)
+        session_data = self.get_session_data(session_id, update_activity=False)
         if not session_data:
             return False
         
@@ -217,7 +230,7 @@ class SessionService:
         Returns:
             bool: 追加成功可否
         """
-        session_data = self.get_session_data(session_id)
+        session_data = self.get_session_data(session_id, update_activity=False)
         if not session_data:
             return False
         
@@ -237,7 +250,7 @@ class SessionService:
         Returns:
             bool: 除去成功可否
         """
-        session_data = self.get_session_data(session_id)
+        session_data = self.get_session_data(session_id, update_activity=False)
         if not session_data:
             return False
         
@@ -261,6 +274,7 @@ class SessionService:
         """
         session_data = self.get_session_data(session_id)
         if not session_data:
+            logger.warning(f"セッションデータが見つかりません（制限チェック）: {session_id}")
             return False, 0, 0
         
         daily_limit = current_app.config.get('USER_DAILY_LIMIT', 50) if current_app else 50
@@ -278,7 +292,7 @@ class SessionService:
         Returns:
             int: 同時実行タスク数
         """
-        session_data = self.get_session_data(session_id)
+        session_data = self.get_session_data(session_id, update_activity=False)
         if not session_data:
             return 0
         

@@ -309,6 +309,14 @@ class TaskService:
                     progress_data,
                     room=f"user_{user_id}"
                 )
+            else:
+                # Redis未接続時のフォールバック：直接SocketIO使用
+                from app import socketio
+                socketio.emit(
+                    'generation_progress',
+                    progress_data,
+                    room=f"user_{user_id}"
+                )
             
             logger.debug(f"進捗通知送信: {user_id} - {progress_data.get('message', '')}")
             

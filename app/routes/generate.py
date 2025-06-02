@@ -37,13 +37,25 @@ def generate_hairstyle():
         JSON: 生成タスク開始結果
     """
     try:
-        # セッション確認
+        # セッション確認・自動作成
         user_id = session.get('user_id')
         if not user_id:
-            return jsonify({
-                'success': False,
-                'error': 'セッションが見つかりません。ページを再読み込みしてください。'
-            }), 401
+            # セッションが存在しない場合は新規作成
+            user_id = session_service.create_user_session()
+            session['user_id'] = user_id
+            session.permanent = True  # セッション永続化
+            logger.info(f"新規セッション作成（生成時）: {user_id}")
+            
+        # セッションデータの存在確認（アクティビティ更新付き）
+        session_data = session_service.get_session_data(user_id, update_activity=True)
+        if not session_data:
+            # セッションデータが失われている場合は再作成
+            user_id = session_service.create_user_session()
+            session['user_id'] = user_id
+            session.permanent = True
+            logger.info(f"セッションデータ再作成: {user_id}")
+            # 再作成後のデータ確認
+            session_data = session_service.get_session_data(user_id, update_activity=False)
         
         # リクエストデータ取得
         data = request.get_json()
