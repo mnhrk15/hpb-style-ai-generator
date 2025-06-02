@@ -80,7 +80,12 @@ def upload_file():
             
             # セッションに追加
             try:
-                session_service.add_uploaded_file(user_id, file_info)
+                # ファイル情報にWeb用パスを追加
+                file_info_with_path = file_info.copy()
+                file_info_with_path['web_path'] = file_path.replace('app/', '/')
+                file_info_with_path['saved_path'] = file_path  # 元のパスも保持
+                
+                session_service.add_uploaded_file(user_id, file_info_with_path)
                 logger.info("セッションへのファイル情報追加成功")
             except Exception as session_error:
                 logger.warning(f"セッション更新エラー: {session_error}")

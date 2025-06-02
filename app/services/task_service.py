@@ -158,10 +158,12 @@ class TaskService:
             if success:
                 # セッションに追加
                 generation_info = {
+                    "id": str(uuid.uuid4()),
                     "task_id": task_id,
                     "flux_task_id": flux_task_id,
                     "original_filename": original_filename,
-                    "generated_path": saved_path,
+                    "uploaded_path": file_path,  # アップロード画像のパス
+                    "generated_path": saved_path,  # 生成画像のパス
                     "japanese_prompt": japanese_prompt,
                     "optimized_prompt": optimized_prompt
                 }
@@ -174,6 +176,7 @@ class TaskService:
                     'message': 'ヘアスタイル生成が完了しました！',
                     'result': {
                         'generated_path': saved_path.replace('app/', '/'),
+                        'uploaded_path': file_path.replace('app/', '/'),
                         'original_filename': original_filename
                     }
                 })
@@ -402,10 +405,12 @@ def register_celery_tasks(celery_app: Celery):
             if success:
                 # セッションに追加
                 generation_info = {
+                    "id": str(uuid.uuid4()),
                     "task_id": task_id,
                     "flux_task_id": flux_task_id,
                     "original_filename": original_filename,
-                    "generated_path": saved_path,
+                    "uploaded_path": file_path,  # アップロード画像のパス
+                    "generated_path": saved_path,  # 生成画像のパス
                     "japanese_prompt": japanese_prompt,
                     "optimized_prompt": optimized_prompt
                 }
@@ -419,6 +424,7 @@ def register_celery_tasks(celery_app: Celery):
                     'message': 'ヘアスタイル生成が完了しました！',
                     'result': {
                         'generated_path': saved_path.replace('app/', '/'),
+                        'uploaded_path': file_path.replace('app/', '/'),
                         'original_filename': original_filename
                     }
                 })
