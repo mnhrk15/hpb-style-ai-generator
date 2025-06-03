@@ -278,18 +278,266 @@ class FluxService:
     @staticmethod
     def encode_image_to_base64(image_path: str) -> str:
         """
-        画像ファイルをbase64エンコード
+        画像ファイルをBase64エンコード
         
         Args:
             image_path (str): 画像ファイルパス
             
         Returns:
-            str: base64エンコード済み画像データ
+            str: Base64エンコード済み画像データ
+            
+        Raises:
+            Exception: エンコードエラー時
         """
         try:
             with open(image_path, 'rb') as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                 return encoded_string
         except Exception as e:
-            logger.error(f"画像base64エンコードエラー: {e}")
-            raise Exception(f"画像エンコード失敗: {e}") 
+            logger.error(f"Base64エンコードエラー: {e}")
+            raise Exception(f"画像のBase64エンコードに失敗しました: {str(e)}")
+
+    def generate_multiple_hair_styles(self, image_base64: str, optimized_prompt: str, 
+                                    count: int = 1, base_seed: Optional[int] = None,
+                                    safety_tolerance: int = 2, output_format: str = "jpeg") -> list:
+        """
+        複数ヘアスタイル画像の並行生成
+        
+        Args:
+            image_base64 (str): 元画像（base64エンコード）
+            optimized_prompt (str): 最適化されたプロンプト
+            count (int): 生成枚数（1~5枚）
+            base_seed (int, optional): ベースシード値（各タスクは+1,+2...される）
+            safety_tolerance (int): 安全性許容度
+            output_format (str): 出力フォーマット
+            
+        Returns:
+            list: タスクID一覧
+            
+        Raises:
+            Exception: API呼び出しエラー時
+        """
+        if not 1 <= count <= 5:
+            raise ValueError("生成枚数は1~5枚の間で指定してください")
+        
+        if not self.api_key:
+            raise Exception("BFL_API_KEY が設定されていません")
+        
+        logger.info(f"複数画像生成開始: {count}枚")
+        
+        task_ids = []
+        
+        for i in range(count):
+            try:
+                # 各タスクに異なるseed値を設定（多様性確保）
+                seed = None
+                if base_seed is not None:
+                    seed = base_seed + i
+                
+                # 個別タスク開始
+                task_id = self.generate_hair_style(
+                    image_base64=image_base64,
+                    optimized_prompt=optimized_prompt,
+                    seed=seed,
+                    safety_tolerance=safety_tolerance,
+                    output_format=output_format
+                )
+                
+                task_ids.append({
+                    'task_id': task_id,
+                    'index': i + 1,
+                    'seed': seed,
+                    'status': 'queued'
+                })
+                
+                logger.info(f"タスク {i+1}/{count} 開始: {task_id}")
+                
+            except Exception as e:
+                logger.error(f"タスク {i+1} 開始エラー: {e}")
+                # エラーが発生したタスクもリストに含める（エラー追跡のため）
+                task_ids.append({
+                    'task_id': None,
+                    'index': i + 1,
+                    'seed': None,
+                    'status': 'failed',
+                    'error': str(e)
+                })
+        
+        logger.info(f"複数画像生成タスク開始完了: {len([t for t in task_ids if t['task_id']])}枚成功")
+        return task_ids
+
+    def poll_multiple_until_ready(self, task_infos: list, 
+                                 max_wait_time: Optional[int] = None,
+                                 progress_callback: Optional[callable] = None) -> list:
+        """
+        複数タスクの結果を並行ポーリング
+        
+        Args:
+            task_infos (list): タスク情報リスト
+            max_wait_time (int, optional): 最大待機時間
+            progress_callback (callable, optional): 進捗通知コールバック
+            
+        Returns:
+            list: 結果リスト [{'index': 1, 'image_url': '...', 'status': 'success'}, ...]
+        """
+        if max_wait_time is None:
+            max_wait_time = self.max_wait_time
+        
+        start_time = time.time()
+        results = []
+        
+        # 有効なタスクのみ処理
+        valid_tasks = [task for task in task_infos if task.get('task_id')]
+        
+        # 結果初期化
+        for task in task_infos:
+            results.append({
+                'index': task['index'],
+                'task_id': task.get('task_id'),
+                'status': 'failed' if not task.get('task_id') else 'pending',
+                'image_url': None,
+                'error': task.get('error'),
+                'seed': task.get('seed')
+            })
+        
+        completed_tasks = set()
+        attempt = 0
+        
+        while len(completed_tasks) < len(valid_tasks) and time.time() - start_time < max_wait_time:
+            attempt += 1
+            
+            for i, task in enumerate(valid_tasks):
+                task_id = task['task_id']
+                
+                if task_id in completed_tasks:
+                    continue
+                
+                try:
+                    result = self.get_result(task_id)
+                    status = result.get("status")
+                    
+                    # 結果のインデックスを見つける
+                    result_idx = next(j for j, r in enumerate(results) if r['task_id'] == task_id)
+                    
+                    if status == "Ready":
+                        image_url = result["result"]["sample"]
+                        results[result_idx].update({
+                            'status': 'success',
+                            'image_url': image_url
+                        })
+                        completed_tasks.add(task_id)
+                        logger.info(f"タスク完了: {task['index']}/{len(task_infos)} - {task_id}")
+                    
+                    elif status in ["Error", "Content Moderated", "Request Moderated"]:
+                        error_detail = result.get("result", {}).get("message", "詳細不明")
+                        results[result_idx].update({
+                            'status': 'failed',
+                            'error': f"{status}: {error_detail}"
+                        })
+                        completed_tasks.add(task_id)
+                        logger.error(f"タスク失敗: {task['index']}/{len(task_infos)} - {error_detail}")
+                    
+                    # 進捗コールバック実行
+                    if progress_callback:
+                        progress_callback({
+                            'completed': len(completed_tasks),
+                            'total': len(valid_tasks),
+                            'elapsed_time': time.time() - start_time,
+                            'attempt': attempt,
+                            'results': results
+                        })
+                        
+                except Exception as e:
+                    logger.warning(f"タスク {task_id} ポーリングエラー: {e}")
+                    continue
+            
+            # 未完了タスクがある場合は待機
+            if len(completed_tasks) < len(valid_tasks):
+                time.sleep(self.polling_interval)
+        
+        # タイムアウトチェック
+        if len(completed_tasks) < len(valid_tasks):
+            elapsed = time.time() - start_time
+            logger.warning(f"複数画像生成タイムアウト: {len(completed_tasks)}/{len(valid_tasks)}完了 ({elapsed:.1f}秒)")
+            
+            # 未完了タスクをタイムアウトとしてマーク
+            for result in results:
+                if result['status'] == 'pending':
+                    result.update({
+                        'status': 'timeout',
+                        'error': f'タイムアウト ({elapsed:.1f}秒)'
+                    })
+        
+        logger.info(f"複数画像生成完了: {len([r for r in results if r['status'] == 'success'])}/{len(results)}枚成功")
+        return results
+
+    def download_and_save_multiple_images(self, results: list, user_id: str, 
+                                        original_filename: str, prefix: str = "generated") -> list:
+        """
+        複数画像の一括ダウンロード・保存
+        
+        Args:
+            results (list): poll_multiple_until_readyの結果
+            user_id (str): ユーザーID
+            original_filename (str): 元ファイル名
+            prefix (str): ファイル名プレフィックス
+            
+        Returns:
+            list: 保存結果リスト
+        """
+        saved_results = []
+        
+        for result in results:
+            if result['status'] != 'success' or not result['image_url']:
+                saved_results.append({
+                    'index': result['index'],
+                    'success': False,
+                    'path': None,
+                    'error': result.get('error', '画像生成失敗')
+                })
+                continue
+            
+            try:
+                # ファイル名生成
+                name_parts = original_filename.rsplit('.', 1)
+                if len(name_parts) == 2:
+                    name, ext = name_parts
+                    filename = f"{prefix}_{user_id}_{name}_{result['index']}.{ext}"
+                else:
+                    filename = f"{prefix}_{user_id}_{original_filename}_{result['index']}.jpg"
+                
+                # 保存パス
+                generated_folder = current_app.config.get('GENERATED_FOLDER', 'app/static/generated')
+                local_path = os.path.join(generated_folder, filename)
+                
+                # ダウンロード・保存
+                success = self.download_and_save_image(result['image_url'], local_path)
+                
+                if success:
+                    saved_results.append({
+                        'index': result['index'],
+                        'success': True,
+                        'path': local_path,
+                        'task_id': result['task_id'],
+                        'seed': result.get('seed')
+                    })
+                else:
+                    saved_results.append({
+                        'index': result['index'],
+                        'success': False,
+                        'path': None,
+                        'error': '画像保存失敗'
+                    })
+                    
+            except Exception as e:
+                logger.error(f"画像 {result['index']} 保存エラー: {e}")
+                saved_results.append({
+                    'index': result['index'],
+                    'success': False,
+                    'path': None,
+                    'error': str(e)
+                })
+        
+        success_count = len([r for r in saved_results if r['success']])
+        logger.info(f"複数画像保存完了: {success_count}/{len(results)}枚成功")
+        return saved_results 

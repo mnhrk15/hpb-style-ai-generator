@@ -94,6 +94,34 @@
                 </div>
             </div>
             
+            <!-- 生成枚数選択 -->
+            <div class="mb-8">
+                <label class="block text-sm font-medium text-slate-700 mb-3">
+                    生成枚数を選択
+                </label>
+                <div class="flex gap-2">
+                    <button type="button" class="count-selector active px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="1">
+                        1枚
+                    </button>
+                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="2">
+                        2枚
+                    </button>
+                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="3">
+                        3枚
+                    </button>
+                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="4">
+                        4枚
+                    </button>
+                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="5">
+                        5枚
+                    </button>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-xs text-slate-400">多様な結果を得るため複数枚生成をお勧めします</span>
+                    <span id="estimated-time" class="text-xs text-slate-400">予想時間: 60-180秒</span>
+                </div>
+            </div>
+            
             <!-- 生成ボタン -->
             <button type="submit" id="generate-btn" class="w-full py-4 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
                 <span id="btn-text">画像をアップロードしてください</span>
@@ -101,21 +129,46 @@
         </form>
     </div>
     
-    <!-- 生成結果 -->
+    <!-- 生成結果（複数画像対応） -->
     <div id="result-section" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
         <h2 class="text-xl font-medium text-slate-900 mb-6 text-center">生成結果</h2>
         
-        <div class="grid grid-cols-2 gap-6 mb-6">
-            <div>
-                <p class="text-sm text-slate-500 mb-2 text-center">変更前</p>
-                <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
-                    <img id="before-image" class="w-full h-full object-cover" alt="変更前">
+        <!-- 単数結果表示 -->
+        <div id="single-result" class="hidden">
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <p class="text-sm text-slate-500 mb-2 text-center">変更前</p>
+                    <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                        <img id="before-image" class="w-full h-full object-cover" alt="変更前">
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500 mb-2 text-center">変更後</p>
+                    <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                        <img id="after-image" class="w-full h-full object-cover" alt="変更後">
+                    </div>
                 </div>
             </div>
-            <div>
-                <p class="text-sm text-slate-500 mb-2 text-center">変更後</p>
-                <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
-                    <img id="after-image" class="w-full h-full object-cover" alt="変更後">
+        </div>
+        
+        <!-- 複数結果表示 -->
+        <div id="multiple-result" class="hidden">
+            <div class="mb-6">
+                <p class="text-sm text-slate-500 mb-3 text-center">変更前</p>
+                <div class="flex justify-center">
+                    <div class="w-48 h-48 bg-slate-50 rounded-xl overflow-hidden">
+                        <img id="original-image-multiple" class="w-full h-full object-cover" alt="変更前">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-sm text-slate-500">生成結果 (<span id="success-count">0</span>/<span id="total-count">0</span>枚)</p>
+                    <button id="download-all-btn" class="hidden text-sm text-slate-600 hover:text-slate-900">すべてダウンロード</button>
+                </div>
+                <div id="generated-images-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- 動的に生成される画像 -->
                 </div>
             </div>
         </div>
@@ -130,7 +183,7 @@
         </div>
     </div>
     
-    <!-- 生成中ステータス -->
+    <!-- 生成中ステータス（複数画像対応） -->
     <div id="generation-status" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
         <div class="text-center">
             <div class="w-12 h-12 mx-auto mb-4">
@@ -143,11 +196,19 @@
             </div>
             <h3 id="status-title" class="text-lg font-medium text-slate-900 mb-2">画像を生成中...</h3>
             <p id="status-message" class="text-sm text-slate-500">しばらくお待ちください（通常60-180秒）</p>
+            
+            <!-- 複数画像生成用プログレスバー -->
+            <div id="multiple-progress" class="hidden mt-4">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div id="progress-bar" class="bg-slate-900 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-xs text-slate-400 mt-2">0/0 完了</p>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- 統計情報（最下部にシンプルに配置） -->
+<!-- 統計情報（複数枚対応表示） -->
 <div class="max-w-md mx-auto mt-16">
     <div class="bg-slate-50 rounded-2xl p-6">
         <div class="grid grid-cols-3 gap-4 text-center">
@@ -164,8 +225,67 @@
                 <div class="text-xs text-slate-500">残り</div>
             </div>
         </div>
+        <div class="mt-3 text-center">
+            <p class="text-xs text-slate-400">※複数枚生成時は枚数分消費されます</p>
+        </div>
     </div>
 </div>
+
+<style>
+    /* 生成枚数選択のスタイル */
+    .count-selector {
+        transition: all 0.2s ease;
+    }
+    
+    .count-selector.active {
+        background-color: #0f172a;
+        color: white;
+        border-color: #0f172a;
+    }
+    
+    .count-selector:hover:not(.active) {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+    }
+    
+    /* 画像グリッドのスタイル */
+    .generated-image-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .generated-image-item:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .generated-image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .generated-image-item .image-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+        padding: 8px;
+        color: white;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .generated-image-item:hover .image-overlay {
+        opacity: 1;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
