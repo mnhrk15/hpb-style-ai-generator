@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}About - Hair Style AI Generator{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto text-center">
+    <h1 class="text-4xl font-light text-slate-900 mb-4">このアプリケーションについて</h1>
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 text-left">
+        <p class="text-lg text-slate-700 mb-4">
+            Hair Style AI Generator は、最新のAI技術を活用してヘアスタイルをシミュレーションするアプリケーションです。
+        </p>
+        <h2 class="text-2xl font-medium text-slate-800 mt-6 mb-3">主な機能</h2>
+        <ul class="list-disc list-inside text-slate-600 mb-4">
+            <li>アップロードされた写真のヘアスタイルを変更</li>
+            <li>日本語の指示に基づいたプロンプトの自動最適化</li>
+            <li>高品質なAI画像生成</li>
+            <li>リアルタイムでの進捗表示</li>
+        </ul>
+        {% if app_info %}
+            <h2 class="text-2xl font-medium text-slate-800 mt-6 mb-3">技術情報</h2>
+            <p class="text-slate-600">バージョン: {{ app_info.get('version', 'N/A') }}</p>
+            <!-- app_info から他の情報を表示 -->
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
