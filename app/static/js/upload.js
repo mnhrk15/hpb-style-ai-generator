@@ -93,10 +93,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ファイルアップロード
     function uploadFile(file) {
-        console.log('=== アップロード開始 ===');
-        console.log('File:', file);
-        console.log('File type:', file.type);
-        console.log('File size:', file.size);
+        // デバッグログ（開発環境のみ）
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('=== アップロード開始 ===');
+            console.log('File:', file);
+            console.log('File type:', file.type);
+            console.log('File size:', file.size);
+        }
         
         const formData = new FormData();
         formData.append('file', file);
@@ -115,12 +118,30 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
         
-        console.log('Axios config:', config);
+        // デバッグログ（開発環境のみ）
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('Axios config:', config);
+        }
         
         axios.post('/upload/', formData, config)
         .then(response => {
             const data = response.data.data;
             currentFilePath = data.file_path;
+            
+            // generate.jsとの互換性のためwindow.uploadedFileInfoを設定
+            window.uploadedFileInfo = {
+                path: data.file_path,
+                filename: file.name,
+                size: file.size,
+                type: file.type
+            };
+            
+            // デバッグログ（開発環境のみ）
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('=== アップロード完了 ===');
+                console.log('Uploaded file info:', window.uploadedFileInfo);
+            }
+            
             showPreview(file, data);
             updateGenerateButton();
             showAlert('success', 'ファイルをアップロードしました');
@@ -166,6 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
         currentFile = null;
         currentFilePath = null;
         
+        // generate.jsとの互換性のためwindow.uploadedFileInfoもクリア
+        window.uploadedFileInfo = null;
+        
         dropContent.classList.remove('hidden');
         uploadProgress.classList.add('hidden');
         imagePreview.classList.add('hidden');
@@ -174,8 +198,41 @@ document.addEventListener('DOMContentLoaded', function() {
         updateGenerateButton();
     }
     
-    // 生成ボタン更新
+    // 生成ボタン更新（統一された状態管理）
     function updateGenerateButton() {
+        // 状態を同期
+        syncFileState();
+        
+        // generate.jsが利用可能なら委譲、そうでなければ自前で処理
+        if (window.GenerateManager && window.GenerateManager.updateButton) {
+            // 少し遅延を入れて状態の同期を確実にする
+            setTimeout(() => {
+                window.GenerateManager.updateButton();
+            }, 10);
+        } else {
+            // フォールバック：自前処理
+            updateButtonFallback();
+        }
+    }
+    
+    // 状態同期：currentFileとwindow.uploadedFileInfoの整合性を保つ
+    function syncFileState() {
+        if (currentFile && currentFilePath && !window.uploadedFileInfo) {
+            // currentFileはあるがwindow.uploadedFileInfoがない場合
+            window.uploadedFileInfo = {
+                path: currentFilePath,
+                filename: currentFile.name,
+                size: currentFile.size,
+                type: currentFile.type
+            };
+        } else if (!currentFile && window.uploadedFileInfo) {
+            // window.uploadedFileInfoはあるがcurrentFileがない場合
+            window.uploadedFileInfo = null;
+        }
+    }
+    
+    // フォールバック用ボタン更新
+    function updateButtonFallback() {
         const hasFile = currentFile !== null;
         const promptInput = document.getElementById('prompt-input');
         const hasPrompt = promptInput && promptInput.value.trim().length > 0;
@@ -192,11 +249,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // プロンプト入力の監視
-    const promptInput = document.getElementById('prompt-input');
-    if (promptInput) {
-        promptInput.addEventListener('input', updateGenerateButton);
+    // プロンプト入力の監視（重複を防ぎつつ確実に動作）
+    function setupPromptListener() {
+        const promptInput = document.getElementById('prompt-input');
+        if (promptInput && !promptInput._uploadListenerAdded) {
+            promptInput.addEventListener('input', function() {
+                // 短時間遅延してgenerate.jsの処理と競合を避ける
+                setTimeout(updateGenerateButton, 5);
+            });
+            promptInput._uploadListenerAdded = true;
+        }
     }
+    
+    // DOMContentLoaded後にプロンプト監視を設定
+    setTimeout(setupPromptListener, 100);
     
     // 外部からのアクセス用
     window.UploadManager = {
