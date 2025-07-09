@@ -62,7 +62,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: hair-style-worker
     restart: unless-stopped
-    command: celery -A app.celery worker --loglevel=info --concurrency=2
+    command: celery -A run.celery_app worker --loglevel=info --concurrency=2
     environment:
       - FLASK_ENV=production
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -78,7 +78,7 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "celery", "-A", "app.celery", "inspect", "ping"]
+      test: ["CMD", "celery", "-A", "run.celery_app", "inspect", "ping"]
       interval: 60s
       timeout: 30s
       retries: 3

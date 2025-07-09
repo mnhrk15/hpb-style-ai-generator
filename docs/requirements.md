@@ -244,7 +244,7 @@ class UserSessionManager:
   - Axios (HTTP通信)
 
 API統合:
-  - google-generativeai: 0.8+ (Gemini 2.5 Flash)
+  - google-genai: 1.0+ (Gemini 2.5 Flash)
   - requests: 2.31.0 (FLUX.1 Kontext API)
 ```
 
@@ -358,53 +358,51 @@ graph TB
 ### 3.4 ディレクトリ構造
 
 ```
-hair_style_generator/
+hpb-style-ai-generator/
 ├── app/
 │   ├── __init__.py
 │   ├── config.py
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   ├── main.py              # メインページ
-│   │   ├── upload.py            # ファイルアップロード
-│   │   ├── generate.py          # 画像生成
-│   │   └── api.py               # APIエンドポイント
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── gemini_service.py    # Gemini API連携
-│   │   ├── flux_service.py      # FLUX.1 API連携
-│   │   ├── file_service.py      # ファイル処理
-│   │   ├── session_service.py   # セッション管理
-│   │   └── task_service.py      # Celery タスク
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── main.css
+│   ├── routes/              # URLルーティング
+│   │   ├── api.py
+│   │   ├── generate.py
+│   │   ├── main.py
+│   │   └── upload.py
+│   ├── services/            # ビジネスロジック
+│   │   ├── file_service.py
+│   │   ├── flux_service.py
+│   │   ├── gemini_service.py
+│   │   ├── scraping_service.py
+│   │   ├── session_service.py
+│   │   └── task_service.py
+│   ├── static/              # 静的ファイル
 │   │   ├── js/
-│   │   │   ├── main.js
-│   │   │   ├── upload.js
 │   │   │   ├── generate.js
-│   │   │   └── gallery.js
-│   │   ├── uploads/             # アップロード画像
-│   │   └── generated/           # 生成画像
-│   ├── templates/
+│   │   │   ├── session-recovery.js
+│   │   │   └── upload.js
+│   │   ├── generated/         # 生成画像（実行時に作成）
+│   │   └── uploads/           # アップロード画像（実行時に作成）
+│   ├── templates/           # HTMLテンプレート
 │   │   ├── base.html
 │   │   ├── index.html
-│   │   ├── upload.html
-│   │   ├── generate.html
-│   │   └── gallery.html
+│   │   ├── gallery.html
+│   │   └── about.html
+│   └── utils/
+│       ├── __init__.py
+│       └── decorators.py
 ├── tests/
 │   ├── conftest.py
-│   ├── test_services/
+│   ├── test_load/
 │   ├── test_routes/
-│   └── test_utils/
-├── scripts/
-│   ├── setup_redis.py
-│   └── test_apis.py
+│   └── test_services/
 ├── docker/
 │   ├── Dockerfile
 │   ├── docker-compose.yml
-│   └── redis.conf
-├── requirements.txt
+│   └── nginx.conf.example
+├── docs/
+│   └── requirements.md
+├── logs/                  # ログファイル
 ├── .env.example
+├── requirements.txt
 ├── run.py
 └── README.md
 ```
@@ -640,7 +638,7 @@ services:
 
   worker:
     build: .
-    command: celery -A app.celery worker --loglevel=info
+    command: celery -A run.celery_app worker --loglevel=info
     environment:
       - REDIS_URL=redis://redis:6379/0
     depends_on:
@@ -683,7 +681,7 @@ Flask==3.0.3
 Flask-SocketIO==5.3.6
 Celery==5.3.6
 Redis==5.0.1
-google-generativeai==0.8.0
+google-genai>=1.0.0
 requests==2.31.0
 Pillow==10.0.1
 python-dotenv==1.0.0
@@ -693,7 +691,7 @@ pytest==7.4.3
 pytest-flask==1.3.0
 gunicorn[eventlet]==21.2.0
 locust==2.17.0
-eventlet==0.33.3
+eventlet==0.35.2
 kombu==5.3.5
 EOF
 
