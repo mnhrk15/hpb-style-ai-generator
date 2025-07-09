@@ -53,8 +53,8 @@ class GeminiService:
         
         self.api_key = os.getenv('GEMINI_API_KEY')
         if not self.api_key:
-            logger.warning("GEMINI_API_KEY が設定されていません")
-            return
+            logger.error("GEMINI_API_KEY が設定されていません")
+            raise ValueError("GEMINI_API_KEY が設定されていません")
         
         try:
             self.client = genai.Client(api_key=self.api_key)
@@ -81,7 +81,7 @@ class GeminiService:
                   expression, and composition, keep the same lighting and background"
         """
         if not self.client:
-            logger.warning("Geminiクライアントが初期化されていません。デフォルトプロンプトを返します。")
+            logger.error("Geminiクライアントが初期化されていません。APIキーが設定されているか確認してください。")
             return self._generate_fallback_prompt(japanese_input)
         
         try:

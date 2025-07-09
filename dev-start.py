@@ -32,14 +32,14 @@ if __name__ == '__main__':
     # メインアプリケーション起動
     from run import app, socketio
     
-    print(f"🚀 サーバー起動中... http://127.0.0.1:5000")
-    print("=" * 50)
+    # 起動
+    print("🚀 サーバー起動中... http://127.0.0.1:5001")
+    print("==================================================")
     
-    # SocketIOサーバーで起動
     socketio.run(
-        app,
-        host='127.0.0.1',
-        port=5000,
+        app, 
+        host='127.0.0.1', 
+        port=5001, 
         debug=True,
-        use_reloader=False  # SocketIO使用時はReloader無効
+        use_reloader=True
     ) 

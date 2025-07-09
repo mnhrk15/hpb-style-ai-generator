@@ -275,28 +275,6 @@ class FluxService:
         
         return time_estimates.get(complexity, 60)
     
-    @staticmethod
-    def encode_image_to_base64(image_path: str) -> str:
-        """
-        画像ファイルをBase64エンコード
-        
-        Args:
-            image_path (str): 画像ファイルパス
-            
-        Returns:
-            str: Base64エンコード済み画像データ
-            
-        Raises:
-            Exception: エンコードエラー時
-        """
-        try:
-            with open(image_path, 'rb') as image_file:
-                encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                return encoded_string
-        except Exception as e:
-            logger.error(f"Base64エンコードエラー: {e}")
-            raise Exception(f"画像のBase64エンコードに失敗しました: {str(e)}")
-
     def generate_multiple_hair_styles(self, image_base64: str, optimized_prompt: str, 
                                     count: int = 1, base_seed: Optional[int] = None,
                                     safety_tolerance: int = 2, output_format: str = "jpeg") -> list:

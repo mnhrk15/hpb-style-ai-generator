@@ -81,6 +81,17 @@ def create_directories():
     print("✅ ディレクトリ作成完了")
 
 
+def validate_secret_key(app):
+    """本番環境でのデフォルトSECRET_KEY使用を防止"""
+    if os.getenv('FLASK_ENV') == 'production' and \
+       app.config.get('SECRET_KEY') == 'dev-secret-key-change-in-production':
+        print("❌ 本番環境でデフォルトのSECRET_KEYが使用されています。")
+        print("環境変数 'SECRET_KEY' を設定してください。")
+        sys.exit(1)
+    
+    print("✅ SECRET_KEY検証完了")
+
+
 # アプリケーションとCeleryインスタンスの作成
 app = create_app()
 celery_app = create_celery_app(app)
@@ -91,6 +102,7 @@ if __name__ == '__main__':
     setup_logging()
     validate_environment()
     create_directories()
+    validate_secret_key(app)
     
     # Redis接続確認（開発環境のみ）
     if app.config.get('DEBUG', False):
@@ -113,7 +125,7 @@ if __name__ == '__main__':
         socketio.run(
             app,
             host=os.getenv('FLASK_HOST', '127.0.0.1'),
-            port=int(os.getenv('FLASK_PORT', '5000')),
+            port=int(os.getenv('FLASK_PORT', '5001')),
             debug=app.config.get('DEBUG', False),
             use_reloader=False  # SocketIOと併用時はReloaderを無効化
         )
