@@ -7,6 +7,11 @@ Hair Style AI Generator - サーバー動作テスト
 import requests
 import time
 import sys
+import json
+import os
+
+# 設定
+base_url = os.getenv('BASE_URL', 'http://127.0.0.1:5001')
 
 def test_server(base_url="http://127.0.0.1:5000"):
     """サーバーの基本動作をテスト"""

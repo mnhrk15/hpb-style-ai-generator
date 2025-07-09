@@ -32,7 +32,7 @@ services:
     container_name: hair-style-web
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - FLASK_ENV=production
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
