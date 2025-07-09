@@ -49,7 +49,8 @@ class BaseConfig:
     PERMANENT_SESSION_LIFETIME = timedelta(seconds=SESSION_TIMEOUT)
     
     # レート制限設定
-    RATELIMIT_STORAGE_URL = REDIS_URL
+    RATELIMIT_STORAGE_URI = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    RATELIMIT_STORAGE_URL = REDIS_URL # 旧バージョンとの互換性のため残す場合がある
     RATE_LIMIT_PER_DAY = int(os.getenv('RATE_LIMIT_PER_DAY', '200'))
     RATE_LIMIT_PER_HOUR = int(os.getenv('RATE_LIMIT_PER_HOUR', '50'))
     RATE_LIMIT_PER_MINUTE = int(os.getenv('RATE_LIMIT_PER_MINUTE', '10'))

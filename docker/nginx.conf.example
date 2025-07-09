@@ -1,0 +1,83 @@
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    #tcp_nopush on;
+    keepalive_timeout 65;
+    #gzip on;
+
+    # メインアプリケーションサーバー
+    upstream flask_app {
+        # Docker Composeのサービス名を指定
+        server web:5000;
+    }
+
+    # Socket.IO用サーバー
+    upstream socketio_app {
+        # Docker Composeのサービス名を指定
+        server web:5000;
+    }
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        # WebSocket (Socket.IO) のプロキシ設定
+        location /socket.io {
+            proxy_pass http://socketio_app;
+            proxy_http_version 1.1;
+            
+            # ヘッダー設定
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "Upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # タイムアウト設定
+            proxy_connect_timeout 7d;
+            proxy_send_timeout 7d;
+            proxy_read_timeout 7d;
+        }
+
+        # Flaskアプリケーションへのプロキシ設定
+        location / {
+            proxy_pass http://flask_app;
+            
+            # ヘッダー設定
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # 静的ファイルの効率的な配信（任意）
+        # docker-compose.ymlのvolumeマウントとパスを合わせる
+        location /static/ {
+            alias /var/www;
+            expires 30d;
+            add_header Cache-Control "public";
+        }
+    }
+} 
