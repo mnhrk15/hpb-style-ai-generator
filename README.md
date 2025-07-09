@@ -73,7 +73,7 @@ pip install -r requirements.txt
 redis-server
 
 # Celeryワーカー起動（別ターミナル）
-celery -A app.celery worker --loglevel=info
+celery -A run.celery_app worker --loglevel=info
 
 # アプリケーション起動（推奨: SocketIOサーバー使用）
 python dev-start.py
@@ -347,7 +347,7 @@ export REDIS_URL=redis://your-redis-server:6379/0
 gunicorn --worker-class eventlet -w 4 --bind 0.0.0.0:5000 run:app
 
 # Celeryワーカー起動
-celery -A app.celery worker --loglevel=info --concurrency=4
+celery -A run.celery_app worker --loglevel=info --concurrency=4
 ```
 
 ### 環境要件
@@ -370,7 +370,7 @@ curl http://localhost:5000/api/health
 redis-cli ping
 
 # Celeryワーカー確認
-celery -A app.celery inspect ping
+celery -A run.celery_app inspect ping
 ```
 
 ### ログ管理
