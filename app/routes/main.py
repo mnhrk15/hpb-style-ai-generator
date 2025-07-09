@@ -3,8 +3,9 @@ Hair Style AI Generator - Main Routes
 メインページ・ギャラリー・ヘルプ・About
 """
 
-from flask import Blueprint, render_template, current_app, session
+from flask import Blueprint, render_template, current_app, session, url_for
 from app.services.session_service import SessionService
+from app.utils.decorators import session_required
 import logging
 from datetime import datetime
 
@@ -15,6 +16,7 @@ session_service = SessionService()
 
 
 @main_bp.route('/')
+@session_required
 def index():
     """
     メインページ（ホーム）
@@ -25,21 +27,9 @@ def index():
     try:
         # ユーザーセッション確認・自動作成
         user_id = session.get('user_id')
-        if not user_id:
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True  # セッション永続化
-            logger.info(f"新規セッション作成（メインページ）: {user_id}")
         
         # セッションデータ取得・確認
         session_data = session_service.get_session_data(user_id, update_activity=True)
-        if not session_data:
-            # セッションデータが失われている場合は再作成
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True
-            session_data = session_service.get_session_data(user_id, update_activity=False)
-            logger.info(f"セッションデータ再作成（メインページ）: {user_id}")
         
         # 統計情報作成
         stats = {
@@ -63,6 +53,7 @@ def index():
 
 
 @main_bp.route('/gallery')
+@session_required
 def gallery():
     """
     ギャラリーページ
@@ -73,21 +64,9 @@ def gallery():
     try:
         # ユーザーセッション確認・自動作成
         user_id = session.get('user_id')
-        if not user_id:
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True  # セッション永続化
-            logger.info(f"新規セッション作成（ギャラリー）: {user_id}")
         
         # セッションデータ取得・確認
         session_data = session_service.get_session_data(user_id, update_activity=True)
-        if not session_data:
-            # セッションデータが失われている場合は再作成
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True
-            session_data = session_service.get_session_data(user_id, update_activity=False)
-            logger.info(f"セッションデータ再作成（ギャラリー）: {user_id}")
         
         # 生成画像履歴取得
         images = []
@@ -119,6 +98,15 @@ def gallery():
                         'features': img.get('features', {})
                     }
                     
+                    # url_forを使用して動的にURLを生成
+                    if processed_image['uploaded_path']:
+                        filename = processed_image['uploaded_path'].replace('app/static/', '', 1)
+                        processed_image['uploaded_url'] = url_for('static', filename=filename)
+
+                    if processed_image['generated_path']:
+                        filename = processed_image['generated_path'].replace('app/static/', '', 1)
+                        processed_image['generated_url'] = url_for('static', filename=filename)
+
                     images.append(processed_image)
                     
                 except Exception as img_error:

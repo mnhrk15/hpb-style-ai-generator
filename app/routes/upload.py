@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from app import limiter
 from app.services.file_service import FileService
 from app.services.session_service import SessionService
+from app.utils.decorators import session_required
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ session_service = SessionService()
 
 @upload_bp.route('/', methods=['POST'])
 @limiter.limit("20 per hour")  # アップロード制限
+@session_required
 def upload_file():
     """
     ファイルアップロード処理
@@ -35,23 +37,7 @@ def upload_file():
         
         # セッション確認・自動作成
         user_id = session.get('user_id')
-        if not user_id:
-            # セッションサービスで新規作成（IDも自動生成）
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True  # セッションを永続化
-            logger.info(f"新規セッション作成（アップロード時）: {user_id}")
-        else:
-            # セッションデータの存在確認
-            session_data = session_service.get_session_data(user_id, update_activity=False)
-            if not session_data:
-                # セッションデータが失われている場合は再作成
-                user_id = session_service.create_user_session()
-                session['user_id'] = user_id
-                session.permanent = True
-                logger.info(f"セッションデータ再作成（アップロード時）: {user_id}")
-            else:
-                logger.info(f"既存セッション使用: {user_id}")
+        logger.info(f"既存セッション使用: {user_id}")
         
         # ファイル存在確認
         if 'file' not in request.files:
@@ -163,6 +149,7 @@ def validate_file():
 
 @upload_bp.route('/history', methods=['GET'])
 @limiter.limit("100 per hour")
+@session_required
 def upload_history():
     """
     ユーザーのアップロード履歴取得
