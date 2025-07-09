@@ -128,7 +128,7 @@ def gallery():
         
         logger.info(f"ギャラリー表示: {len(images)}枚の画像")
         
-        return render_template('gallery.html', images=images, generated_images=images, stats=stats)
+        return render_template('gallery.html', generated_images=images, stats=stats)
         
     except Exception as e:
         logger.error(f"ギャラリーページエラー: {e}")
@@ -138,7 +138,7 @@ def gallery():
             'total_generations': 0,
             'daily_limit_remaining': current_app.config.get('USER_DAILY_LIMIT', 50)
         }
-        return render_template('gallery.html', images=[], generated_images=[], stats=default_stats)
+        return render_template('gallery.html', generated_images=[], stats=default_stats)
 
 
 @main_bp.route('/help')

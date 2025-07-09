@@ -21,6 +21,12 @@ class BaseConfig:
     # 対応ファイル形式
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
     
+    # スクレイピング設定
+    HOTPEPPER_BEAUTY_IMAGE_SELECTOR = os.getenv(
+        'HOTPEPPER_BEAUTY_IMAGE_SELECTOR',
+        '#jsiHoverAlphaLayerScope > div.cFix.mT20.pH10 > div.fl > div.pr > img'
+    )
+    
     # API設定
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
     BFL_API_KEY = os.getenv('BFL_API_KEY')
@@ -50,7 +56,6 @@ class BaseConfig:
     
     # レート制限設定
     RATELIMIT_STORAGE_URI = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    RATELIMIT_STORAGE_URL = REDIS_URL # 旧バージョンとの互換性のため残す場合がある
     RATE_LIMIT_PER_DAY = int(os.getenv('RATE_LIMIT_PER_DAY', '200'))
     RATE_LIMIT_PER_HOUR = int(os.getenv('RATE_LIMIT_PER_HOUR', '50'))
     RATE_LIMIT_PER_MINUTE = int(os.getenv('RATE_LIMIT_PER_MINUTE', '10'))

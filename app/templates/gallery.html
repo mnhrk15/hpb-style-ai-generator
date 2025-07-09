@@ -38,7 +38,7 @@
                 <!-- Before -->
                 <div class="relative aspect-square bg-slate-50">
                     {% if image.uploaded_url %}
-                        <img src="{{ image.uploaded_url }}" alt="変更前" class="w-full h-full object-cover" 
+                        <img src="{{ image.uploaded_url }}" alt="変更前" class="w-full h-full object-cover" loading="lazy"
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+画像が見つかりません</dGV4dD48L3N2Zz4='">
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
@@ -53,7 +53,7 @@
                 <!-- After -->
                 <div class="relative aspect-square bg-slate-50">
                     {% if image.generated_url %}
-                        <img src="{{ image.generated_url }}" alt="変更後" class="w-full h-full object-cover"
+                        <img src="{{ image.generated_url }}" alt="変更後" class="w-full h-full object-cover" loading="lazy"
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+生成中または<L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+エラー</dGV4dD48L3N2Zz4='">
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">

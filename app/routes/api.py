@@ -47,8 +47,10 @@ def scrape_image_from_url():
         if not page_url:
             return jsonify({'success': False, 'error': 'URLが指定されていません'}), 400
 
-        # HotPepperBeautyのセレクタを指定
-        selector = "#jsiHoverAlphaLayerScope > div.cFix.mT20.pH10 > div.fl > div.pr > img"
+        # 設定ファイルからセレクタを読み込む
+        selector = current_app.config.get('HOTPEPPER_BEAUTY_IMAGE_SELECTOR')
+        if not selector:
+            return jsonify({'success': False, 'error': 'スクレイピング用のセレクタが設定されていません'}), 500
         
         # スクレイピング実行
         image_url = scraping_service.get_image_from_url(page_url, selector)

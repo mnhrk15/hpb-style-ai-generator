@@ -163,6 +163,10 @@ document.addEventListener('DOMContentLoaded', function() {
         isGenerating = true;
         updateGenerateButton();
         
+        // タスクIDをフロントエンドで先に生成
+        currentTaskId = self.crypto.randomUUID();
+        console.log(`新規タスクIDを生成: ${currentTaskId}`);
+        
         // UI状態切り替え
         resultSection.classList.add('hidden');
         statusSection.classList.remove('hidden');
@@ -179,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // 生成リクエスト送信
             const response = await axios.post('/generate/', {
+                task_id: currentTaskId, // 生成したタスクIDを送信
                 file_path: uploadedFileInfo.path,
                 japanese_prompt: prompt,
                 original_filename: uploadedFileInfo.filename,
@@ -187,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.data.success) {
-                currentTaskId = response.data.data.task_id;
+                // currentTaskId はリクエスト前に設定済み
                 statusTitle.textContent = currentCount === 1 ? '画像を生成中...' : `${currentCount}枚の画像を生成中...`;
                 statusMessage.textContent = `しばらくお待ちください（${response.data.data.estimated_time}）`;
                 
@@ -212,33 +217,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Socket.IO 進捗イベント処理（強化版）
     if (typeof socket !== 'undefined') {
-        // デバッグ：接続状態を確認
-        console.log('Socket.IO初期状態:', socket.connected);
-        
         socket.on('generation_progress', function(data) {
-            // すべての進捗イベントをログに記録
-            console.log('=== Socket.IO 進捗受信 ===');
-            console.log('Current Task ID:', currentTaskId);
-            console.log('Received Data:', data);
-            console.log('Task ID Match:', data.task_id === currentTaskId);
-            console.log('Timestamp:', data.timestamp ? new Date(data.timestamp * 1000) : 'none');
-            
-            // タスクIDが一致しない場合の処理を改善
-            if (data.task_id && currentTaskId && data.task_id !== currentTaskId) {
-                console.log('タスクIDが一致しないためスキップ:', data.task_id, 'vs', currentTaskId);
+            console.log('Socket.IO進捗受信:', data);
+
+            // タスクIDが現在のタスクと一致しない場合は無視
+            if (!currentTaskId || data.task_id !== currentTaskId) {
+                console.log('タスクIDが不一致のためスキップ:', data.task_id, 'vs', currentTaskId);
                 return;
-            }
-            
-            // タスクIDが設定されていない場合（ブロードキャスト）でも処理
-            if (!currentTaskId && data.task_id) {
-                console.log('現在のタスクIDが未設定、受信したタスクIDを使用:', data.task_id);
-                currentTaskId = data.task_id;
             }
             
             // ステータス更新
             if (data.message) {
                 statusTitle.textContent = data.message;
-                console.log('ステータス更新:', data.message);
             }
             
             // 複数画像生成の進捗更新
@@ -249,7 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const percentage = (data.completed / data.total) * 100;
                     progressBar.style.width = `${percentage}%`;
                     progressText.textContent = `${data.completed}/${data.total} 完了`;
-                    console.log('進捗バー更新:', percentage + '%');
                 }
                 
                 if (data.message) {
@@ -260,17 +249,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // 完了時の処理
             if (data.status === 'completed') {
                 console.log('生成完了イベント受信:', data);
-                console.log('結果データ:', data.result);
                 setTimeout(() => {
                     handleGenerationComplete(data);
-                }, 500); // 遅延を短縮
+                }, 500);
             } else if (data.status === 'failed') {
                 console.error('生成失敗イベント受信:', data);
                 showAlert('error', data.message || '生成に失敗しました');
                 resetGenerationState();
             }
-            
-            console.log('=== 進捗処理完了 ===');
         });
         
         // その他の有用なSocketIOイベント

@@ -122,7 +122,6 @@ def create_app(config_object_name: str = None): # 設定オブジェクト名を
         redis_client_test.ping() # これが成功すればRedisサーバーは応答している
         
         # Flask-Limiterがこの設定キーを自動的に参照する
-        # app.config['RATELIMIT_STORAGE_URL'] = redis_url_from_env # 古いキー
         app.config['RATELIMIT_STORAGE_URI'] = redis_url_from_env # 新しい正しいキー
         app.logger.info(f"Flask App: Successfully connected to Redis at {redis_url_from_env}. Rate limiting will use Redis.")
         redis_available = True
@@ -132,7 +131,7 @@ def create_app(config_object_name: str = None): # 設定オブジェクト名を
         # RATELIMIT_STORAGE_URL を設定しないか、明示的にメモリを指定することもできるが、
         # 設定しない場合はFlask-Limiterがデフォルトでインメモリを使用し警告を出す。
 
-    # レート制限の初期化 (RATELIMIT_STORAGE_URL設定後)
+    # レート制限の初期化 (RATELIMIT_STORAGE_URI設定後)
     limiter.init_app(app)
     
     # SocketIO初期化
@@ -142,7 +141,7 @@ def create_app(config_object_name: str = None): # 設定オブジェクト名を
     }
     
     if redis_available: # Redisが利用可能であればメッセージキューとして使用
-        socketio_config['message_queue'] = redis_url_from_env # RATELIMIT_STORAGE_URLと同じRedisインスタンスを使用
+        socketio_config['message_queue'] = redis_url_from_env # RATELIMIT_STORAGE_URIと同じRedisインスタンスを使用
         app.logger.info(f"SocketIO will use Redis message queue: {redis_url_from_env}")
     else:
         app.logger.warning("SocketIO will run in single-process mode (Redis not available for message queue).")

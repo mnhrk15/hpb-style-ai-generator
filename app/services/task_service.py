@@ -49,7 +49,8 @@ class TaskService:
             logger.warning(f"外部SocketIO初期化失敗: {e}")
     
     def generate_hairstyle_async(self, user_id: str, file_path: str, 
-                               japanese_prompt: str, original_filename: str) -> str:
+                               japanese_prompt: str, original_filename: str,
+                               task_id: Optional[str] = None) -> str:
         """
         非同期ヘアスタイル生成タスクの開始
         
@@ -58,18 +59,20 @@ class TaskService:
             file_path (str): アップロードファイルパス
             japanese_prompt (str): 日本語プロンプト
             original_filename (str): 元ファイル名
+            task_id (str, optional): フロントエンドで生成されたタスクID
             
         Returns:
             str: タスクID
         """
         if not self.celery_app:
             # Celery利用不可の場合は同期実行
-            return self._generate_hairstyle_sync(user_id, file_path, japanese_prompt, original_filename)
+            return self._generate_hairstyle_sync(user_id, file_path, japanese_prompt, original_filename, task_id)
         
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_hairstyle_task',
-            args=[user_id, file_path, japanese_prompt, original_filename]
+            args=[user_id, file_path, japanese_prompt, original_filename],
+            task_id=task_id
         )
         
         # セッションにタスク追加
@@ -87,7 +90,8 @@ class TaskService:
     
     def generate_multiple_hairstyles_async(self, user_id: str, file_path: str, 
                                          japanese_prompt: str, original_filename: str, 
-                                         count: int = 1, base_seed: Optional[int] = None) -> str:
+                                         count: int = 1, base_seed: Optional[int] = None,
+                                         task_id: Optional[str] = None) -> str:
         """
         複数画像非同期ヘアスタイル生成タスクの開始
         
@@ -98,6 +102,7 @@ class TaskService:
             original_filename (str): 元ファイル名
             count (int): 生成枚数（1~5枚）
             base_seed (int, optional): ベースシード値
+            task_id (str, optional): フロントエンドで生成されたタスクID
             
         Returns:
             str: メインタスクID
@@ -107,12 +112,16 @@ class TaskService:
 
         if not self.celery_app:
             # Celery利用不可の場合は同期実行
-            return self._generate_multiple_hairstyles_sync(user_id, file_path, japanese_prompt, original_filename, count, base_seed)
+            return self._generate_multiple_hairstyles_sync(
+                user_id, file_path, japanese_prompt, original_filename, 
+                task_id=task_id, count=count, base_seed=base_seed
+            )
         
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_multiple_hairstyles_task',
-            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed]
+            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed],
+            task_id=task_id
         )
         
         # セッションにタスク追加
@@ -285,9 +294,8 @@ class TaskService:
         return {'success': True, 'count': count, 'success_count': success_count, 'generated_images': successful_images}
 
     def _generate_hairstyle_sync(self, user_id: str, file_path: str,
-                               japanese_prompt: str, original_filename: str) -> str:
+                               japanese_prompt: str, original_filename: str, task_id: str) -> str:
         """同期ヘアスタイル生成（Celery利用不可時）"""
-        task_id = str(uuid.uuid4())
         try:
             # アクティブタスク追加
             task_info = {
@@ -315,9 +323,8 @@ class TaskService:
     
     def _generate_multiple_hairstyles_sync(self, user_id: str, file_path: str, 
                                          japanese_prompt: str, original_filename: str, 
-                                         count: int = 1, base_seed: Optional[int] = None) -> str:
+                                         task_id: str, count: int = 1, base_seed: Optional[int] = None) -> str:
         """複数画像同期ヘアスタイル生成（Celery利用不可時）"""
-        task_id = str(uuid.uuid4())
         try:
             # アクティブタスク追加
             task_info = {
@@ -453,70 +460,20 @@ class TaskService:
             progress_data (dict): 進捗データ
         """
         try:
-            # 必ずタイムスタンプを追加
             progress_data['timestamp'] = time.time()
+            logger.info(f"進捗通知: user_id={user_id}, status={progress_data.get('status')}, message='{progress_data.get('message')}'")
             
-            # 強化されたログ出力
-            logger.info(f"=== 進捗通知開始 ===")
-            logger.info(f"User ID: {user_id}")
-            logger.info(f"Status: {progress_data.get('status', 'unknown')}")
-            logger.info(f"Message: {progress_data.get('message', '')}")
-            logger.info(f"Task ID: {progress_data.get('task_id', 'none')}")
-            
-            # 複数の方法で通知を試行
-            notification_attempts = []
-            
-            # 1. 外部SocketIO使用（Celeryワーカー用）
             if self.external_socketio:
-                try:
-                    self.external_socketio.emit(
-                        'generation_progress',
-                        progress_data,
-                        room=f"user_{user_id}"
-                    )
-                    notification_attempts.append("外部SocketIO: 成功")
-                    logger.info(f"外部SocketIO通知送信成功: {user_id}")
-                except Exception as e:
-                    notification_attempts.append(f"外部SocketIO: 失敗 - {e}")
-                    logger.warning(f"外部SocketIO通知失敗: {e}")
-            else:
-                notification_attempts.append("外部SocketIO: 利用不可")
-                logger.info("外部SocketIO利用不可")
-            
-            # 2. 直接SocketIO使用
-            try:
-                from app import socketio
-                socketio.emit(
+                self.external_socketio.emit(
                     'generation_progress',
                     progress_data,
                     room=f"user_{user_id}"
                 )
-                notification_attempts.append("直接SocketIO: 成功")
-                logger.info(f"直接SocketIO通知送信成功: {user_id}")
-            except Exception as e:
-                notification_attempts.append(f"直接SocketIO: 失敗 - {e}")
-                logger.warning(f"直接SocketIO通知失敗: {e}")
-            
-            # 3. ブロードキャスト（ルーム指定なし）も試行
-            try:
-                from app import socketio
-                socketio.emit('generation_progress', progress_data)
-                notification_attempts.append("ブロードキャスト: 成功")
-                logger.info(f"ブロードキャスト通知送信成功: {user_id}")
-            except Exception as e:
-                notification_attempts.append(f"ブロードキャスト: 失敗 - {e}")
-                logger.error(f"ブロードキャスト通知も失敗: {e}")
-            
-            # 結果サマリー
-            logger.info(f"=== 通知結果サマリー ===")
-            for attempt in notification_attempts:
-                logger.info(f"  - {attempt}")
-            logger.info(f"========================")
-            
+            else:
+                logger.warning("外部SocketIOが利用不可のため、進捗通知をスキップしました。")
+                
         except Exception as e:
-            logger.error(f"進捗通知重大エラー: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"進捗通知中に重大なエラーが発生しました: {e}", exc_info=True)
 
 
 # Celeryタスク定義

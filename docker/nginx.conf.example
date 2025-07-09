@@ -61,6 +61,20 @@ http {
             proxy_read_timeout 7d;
         }
 
+        # 静的ファイルの効率的な配信
+        # docker-compose.ymlのvolumeマウントとパスを合わせる
+        location /static/uploads/ {
+            alias /var/www/uploads/;
+            expires 30d;
+            add_header Cache-Control "public";
+        }
+
+        location /static/generated/ {
+            alias /var/www/generated/;
+            expires 30d;
+            add_header Cache-Control "public";
+        }
+
         # Flaskアプリケーションへのプロキシ設定
         location / {
             proxy_pass http://flask_app;
@@ -70,14 +84,6 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        # 静的ファイルの効率的な配信（任意）
-        # docker-compose.ymlのvolumeマウントとパスを合わせる
-        location /static/ {
-            alias /var/www;
-            expires 30d;
-            add_header Cache-Control "public";
         }
     }
 } 
