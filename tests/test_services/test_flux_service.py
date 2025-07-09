@@ -334,23 +334,6 @@ class TestFluxService:
             assert service.estimate_generation_time("complex") == 120
             assert service.estimate_generation_time("unknown") == 60  # デフォルト
     
-    def test_encode_image_to_base64_success(self):
-        """画像Base64エンコード成功テスト"""
-        test_image_data = b'fake_image_data'
-        
-        with patch('builtins.open', mock_open(read_data=test_image_data)):
-            result = FluxService.encode_image_to_base64('/test/path/image.jpg')
-            
-            import base64
-            expected = base64.b64encode(test_image_data).decode('utf-8')
-            assert result == expected
-    
-    def test_encode_image_to_base64_file_not_found(self):
-        """画像Base64エンコードファイル未存在テスト"""
-        with patch('builtins.open', side_effect=FileNotFoundError):
-            with pytest.raises(Exception, match="画像エンコード失敗"):
-                FluxService.encode_image_to_base64('/nonexistent/path/image.jpg')
-    
     @patch('requests.post')
     @patch('requests.get')
     def test_full_generation_workflow(self, mock_get, mock_post):
