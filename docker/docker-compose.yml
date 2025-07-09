@@ -9,15 +9,15 @@ services:
     image: redis:7-alpine
     container_name: hair-style-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-defaultpassword}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-defaultpassword}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,9 +35,9 @@ services:
       - "5000:5000"
     environment:
       - FLASK_ENV=production
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - BFL_API_KEY=${BFL_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
@@ -65,9 +65,9 @@ services:
     command: celery -A app.celery worker --loglevel=info --concurrency=2
     environment:
       - FLASK_ENV=production
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-defaultpassword}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - BFL_API_KEY=${BFL_API_KEY}
       - SECRET_KEY=${SECRET_KEY}

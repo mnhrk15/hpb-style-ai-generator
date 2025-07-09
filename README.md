@@ -295,16 +295,36 @@ locust -f tests/test_load/locustfile.py
 
 ### Docker Compose（推奨）
 
-```bash
-# 本番環境デプロイ
-docker-compose -f docker-compose.yml up -d
+本番環境では、`docker-compose.yml` を使用したデプロイを推奨します。
 
-# サービス確認
-docker-compose ps
+1. **環境変数の設定**:
+   ```bash
+   cp env.example .env
+   ```
+   `.env` ファイルを開き、`GEMINI_API_KEY`, `BFL_API_KEY`, `SECRET_KEY` を設定します。
+   **特に `REDIS_PASSWORD` は、本番環境では必ず強力なパスワードに変更してください。**
 
-# ログ確認
-docker-compose logs -f web
-```
+2. **Nginx設定**:
+   Nginxリバースプロキシの設定が必要です。サンプルをコピーして使用します。
+   ```bash
+   cp docker/nginx.conf.example docker/nginx.conf
+   ```
+   必要に応じて `docker/nginx.conf` を編集してください（例: ドメイン名、SSL設定など）。
+
+3. **起動**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+4. **サービス確認**:
+   ```bash
+   docker-compose ps
+   ```
+
+5. **ログ確認**:
+   ```bash
+   docker-compose logs -f web
+   ```
 
 ### 手動デプロイ
 

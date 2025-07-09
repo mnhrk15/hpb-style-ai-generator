@@ -114,14 +114,14 @@ def health_check():
         
         # Gemini API確認
         try:
-            has_gemini_key = bool(os.getenv('GEMINI_API_KEY'))
+            has_gemini_key = bool(current_app.config.get('GEMINI_API_KEY'))
             status['services']['gemini'] = 'configured' if has_gemini_key else 'not_configured'
         except:
             status['services']['gemini'] = 'error'
         
         # FLUX.1 API確認
         try:
-            has_flux_key = bool(os.getenv('BFL_API_KEY'))
+            has_flux_key = bool(current_app.config.get('BFL_API_KEY'))
             status['services']['flux'] = 'configured' if has_flux_key else 'not_configured'
         except:
             status['services']['flux'] = 'error'
@@ -342,7 +342,7 @@ def test_gemini_api():
         JSON: テスト結果
     """
     try:
-        if not os.getenv('GEMINI_API_KEY'):
+        if not current_app.config.get('GEMINI_API_KEY'):
             return jsonify({
                 'success': False,
                 'error': 'GEMINI_API_KEY が設定されていません'
@@ -382,7 +382,7 @@ def test_flux_api():
         JSON: テスト結果
     """
     try:
-        if not os.getenv('BFL_API_KEY'):
+        if not current_app.config.get('BFL_API_KEY'):
             return jsonify({
                 'success': False,
                 'error': 'BFL_API_KEY が設定されていません'

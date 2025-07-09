@@ -21,7 +21,6 @@ Pillow==10.0.1
 
 # ユーティリティ
 python-dotenv==1.0.0
-uuid
 
 # 本番環境
 gunicorn[eventlet]==21.2.0
