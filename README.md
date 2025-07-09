@@ -127,46 +127,46 @@ SESSION_COOKIE_SAMESITE=Lax
 ### システム構成
 
 ```mermaid
-graph TB
+graph TD
     subgraph "User Interface"
         direction LR
-        A[Frontend<br/>HTML/CSS/JS]
-        A_UPLOAD[File Upload]
-        A_URL[URL Input]
+        A["Frontend<br/>HTML/CSS/JS"]
+        A_UPLOAD["File Upload"]
+        A_URL["URL Input"]
     end
 
     subgraph "Backend Server (Flask)"
         direction TB
-        B[Routes & Controllers<br/>(main, upload, generate, api)]
-        U[Utils<br/>@session_required]
+        B["Routes and Controllers<br/>(main, upload, generate, api)"]
+        U["Utils<br/>@session_required"]
         
         subgraph "Business Logic Layer"
-            C[Services Layer]
-            D[Gemini Service<br/>プロンプト最適化]
-            E[Flux Service<br/>画像生成]
-            F[File Service<br/>ファイル処理]
-            S[Scraping Service<br/>URLから画像取得]
+            C["Services Layer"]
+            D["Gemini Service<br/>プロンプト最適化"]
+            E["Flux Service<br/>画像生成"]
+            F["File Service<br/>ファイル処理"]
+            S["Scraping Service<br/>URLから画像取得"]
         end
         
-        G[Celery Worker<br/>非同期タスク処理]
+        G["Celery Worker<br/>非同期タスク処理"]
     end
 
-    subgraph "External Services & Storage"
+    subgraph "External Services and Storage"
         direction TB
-        I[Gemini 2.5 Flash API]
-        J[FLUX.1 Kontext API]
-        H[Redis<br/>Queue & Session]
-        K[File Storage<br/>uploads/ & generated/]
-        HPB[HotPepper Beauty]
+        I["Gemini 2.5 Flash API"]
+        J["FLUX.1 Kontext API"]
+        H["Redis<br/>Queue and Session"]
+        K["File Storage<br/>uploads/ and generated/"]
+        HPB["HotPepper Beauty"]
     end
     
-    L[Multiple Users] --> A_UPLOAD
+    L["Multiple Users"] --> A_UPLOAD
     L --> A_URL
     A_UPLOAD -- "file:uploaded<br/>CustomEvent" --> A
     A_URL -- "file:uploaded<br/>CustomEvent" --> A
     A -- "HTTP/Socket.IO" --> B
     
-    B -- Decorator --> U
+    B -- "Decorator" --> U
     B --> C
     C --> D
     C --> E
