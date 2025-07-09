@@ -1,6 +1,6 @@
 """
 Hair Style AI Generator - Gemini Service
-Gemini 2.5 Flash Preview 05-20による美容室専用プロンプト最適化
+Gemini 2.5 Flashによる美容室専用プロンプト最適化
 """
 
 import os
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class GeminiService:
     """
-    Gemini 2.5 Flash Preview 05-20による美容室専用プロンプト最適化サービス
+    Gemini 2.5 Flashによる美容室専用プロンプト最適化サービス
     thinking_budget=0で速度重視の設定
     """
     
@@ -58,7 +58,7 @@ class GeminiService:
         
         try:
             self.client = genai.Client(api_key=self.api_key)
-            logger.info("Gemini 2.5 Flash Preview 05-20 クライアント初期化完了")
+            logger.info("Gemini 2.5 Flash クライアント初期化完了")
         except Exception as e:
             logger.error(f"Geminiクライアント初期化エラー: {e}")
             raise
@@ -113,9 +113,9 @@ class GeminiService:
 最適化された英語プロンプト:
             """.strip()
             
-            # Gemini 2.5 Flash Preview 05-20での生成（速度重視設定）
+            # Gemini 2.5 Flash での生成（速度重視設定）
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-preview-05-20",
+                model="gemini-2.5-flash",
                 contents=full_prompt,
                 config=GenerateContentConfig(
                     thinking_config=ThinkingConfig(
@@ -215,7 +215,7 @@ class GeminiService:
         try:
             # 簡単なテストクエリ
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-preview-05-20",
+                model="gemini-2.5-flash",
                 contents="Test connection",
                 config=GenerateContentConfig(
                     thinking_config=ThinkingConfig(thinking_budget=0),
