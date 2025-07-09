@@ -55,24 +55,22 @@ def scrape_image_from_url():
         # スクレイピング実行
         image_url = scraping_service.get_image_from_url(page_url, selector)
         
-        # 画像をダウンロードして保存
-        success, saved_path = file_service.save_generated_image(
+        # URLから画像をダウンロードしてアップロードフォルダに保存
+        success, saved_path, file_info = file_service.save_image_from_url(
             image_url=image_url,
             user_id=user_id,
-            original_filename=page_url.split('/')[-1].replace('.html', ''),
-            task_id="scraped"
+            original_filename=f"scraped_{page_url.split('/')[-2]}.jpg"
         )
         
         if not success:
-            return jsonify({'success': False, 'error': '画像の保存に失敗しました'}), 500
+            error_msg = file_info.get('error', '画像の保存に失敗しました') if file_info else '画像の保存に失敗しました'
+            return jsonify({'success': False, 'error': error_msg}), 500
 
         # セッションにアップロード済みとして追加
-        file_info = file_service.analyze_image_features(saved_path)
         file_info_with_path = {
             **file_info,
             'web_path': saved_path.replace('app/', '/'),
-            'saved_path': saved_path,
-            'original_filename': f"scraped_{page_url.split('/')[-2]}.jpg"
+            'saved_path': saved_path
         }
         session_service.add_uploaded_file(user_id, file_info_with_path)
         
@@ -80,8 +78,8 @@ def scrape_image_from_url():
             'success': True,
             'message': '画像の取得と保存が完了しました',
             'data': {
-                'file_path': saved_path.replace('app/', '/'),
-                'original_filename': file_info_with_path['original_filename'],
+                'file_path': file_info_with_path['web_path'],
+                'original_filename': file_info['original_filename'],
                 'file_info': file_info
             }
         })

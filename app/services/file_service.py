@@ -151,6 +151,64 @@ class FileService:
             logger.error(f"ファイル保存エラー: {e}")
             return False, None, {"error": f"ファイル保存に失敗しました: {str(e)}"}
     
+    def save_image_from_url(self, image_url: str, user_id: str, 
+                               original_filename: str) -> Tuple[bool, Optional[str], Optional[Dict]]:
+        """
+        URLから画像をダウンロードしてアップロードフォルダに保存する
+        
+        Args:
+            image_url (str): 画像URL
+            user_id (str): ユーザーID
+            original_filename (str): 元のファイル名
+        
+        Returns:
+            tuple: (保存成功可否, 保存パス, ファイル情報)
+        """
+        try:
+            import requests
+            
+            # 画像ダウンロード
+            response = requests.get(image_url, timeout=30)
+            response.raise_for_status()
+            
+            # BytesIOを使用して画像データをメモリ上で扱う
+            image_data = BytesIO(response.content)
+            
+            # ファイル名生成
+            safe_filename = self._generate_safe_filename(original_filename, user_id)
+            
+            # 保存パス構築
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
+            file_path = os.path.join(upload_folder, safe_filename)
+            
+            # ディレクトリ作成
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            # 画像処理・保存 (save_uploaded_fileと同様の処理)
+            with Image.open(image_data) as img:
+                # EXIF情報による自動回転
+                img = ImageOps.exif_transpose(img)
+                
+                # RGBモードに変換
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # 最適化処理
+                img = self._optimize_image(img)
+                
+                # 保存
+                img.save(file_path, 'JPEG', quality=90, optimize=True)
+            
+            # ファイル情報取得
+            file_info = self._get_file_info(file_path, original_filename)
+            
+            logger.info(f"URLからの画像保存完了: {file_path}")
+            return True, file_path, file_info
+            
+        except Exception as e:
+            logger.error(f"URLからの画像保存エラー: {e}")
+            return False, None, {"error": f"URLからの画像保存に失敗しました: {str(e)}"}
+
     def convert_to_base64(self, file_path: str, max_size: Optional[int] = None) -> str:
         """
         画像ファイルをBase64エンコード
