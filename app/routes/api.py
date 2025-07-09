@@ -90,7 +90,7 @@ def system_info():
                 'min_resolution': '256x256'
             },
             'apis': {
-                'gemini_model': 'gemini-2.5-flash-preview-05-20',
+                'gemini_model': 'gemini-2.5-flash',
                 'flux_model': 'flux-kontext-pro',
                 'real_time_progress': True,
                 'webhook_support': False

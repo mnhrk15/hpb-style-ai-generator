@@ -189,7 +189,7 @@ def about():
             'version': '1.0.0',
             'description': '美容室のためのAIヘアスタイル再現ツール',
             'technologies': {
-                'ai_models': ['FLUX.1 Kontext Pro', 'Gemini 2.5 Flash Preview'],
+                'ai_models': ['FLUX.1 Kontext Pro', 'Gemini 2.5 Flash'],
                 'backend': ['Flask 3.0+', 'Python 3.12', 'Celery', 'Redis'],
                 'frontend': ['Tailwind CSS 4.1', 'Socket.IO', 'Axios']
             },

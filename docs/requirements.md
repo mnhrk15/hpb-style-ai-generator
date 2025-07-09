@@ -70,14 +70,14 @@ def optimize_hair_style_prompt(japanese_input, image_analysis):
     最適化された英語プロンプト:
     """
 
-    # Gemini 2.5 Flash Preview 05-20でプロンプト最適化
+    # Gemini 2.5 Flash でプロンプト最適化
     from google import genai
     from google.genai.types import GenerateContentConfig, ThinkingConfig
     
     client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
     
     response = client.models.generate_content(
-        model="gemini-2.5-flash-preview-05-20",
+        model="gemini-2.5-flash",
         contents=full_prompt,
         config=GenerateContentConfig(
             thinking_config=ThinkingConfig(
@@ -238,7 +238,7 @@ class UserSessionManager:
   - Axios (HTTP通信)
 
 API統合:
-  - google-generativeai: 0.8+ (Gemini 2.5 Flash Preview 05-20)
+  - google-generativeai: 0.8+ (Gemini 2.5 Flash)
   - requests: 2.31.0 (FLUX.1 Kontext API)
 ```
 
@@ -246,10 +246,10 @@ API統合:
 
 ### 3.2.1 Gemini 2.5 Flash統合
 
-Gemini 2.5 Flash Preview 05-20はプロンプト最適化に最適な最新モデル
+Gemini 2.5 Flash はプロンプト最適化に最適な最新モデル
 
 ```python
-# Gemini 2.5 Flash Preview 05-20設定
+# Gemini 2.5 Flash 設定
 from google import genai
 from google.genai.types import GenerateContentConfig, ThinkingConfig
 
@@ -257,11 +257,11 @@ client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
 
 def optimize_prompt_with_gemini(prompt):
     """
-    Gemini 2.5 Flash Preview 05-20でプロンプト最適化
+    Gemini 2.5 Flash でプロンプト最適化
     速度重視のため thinking_budget=0 に設定
     """
     response = client.models.generate_content(
-        model="gemini-2.5-flash-preview-05-20",
+        model="gemini-2.5-flash",
         contents=prompt,
         config=GenerateContentConfig(
             thinking_config=ThinkingConfig(
@@ -457,7 +457,7 @@ def create_external_socketio():
 □ Docker化準備
 
 # 技術検証
-□ Gemini 2.5 Flash Preview 05-20 API接続テスト（thinking_budget=0）
+□ Gemini 2.5 Flash API接続テスト（thinking_budget=0）
 □ FLUX.1 Kontext API接続テスト
 □ 画像処理フロー確認
 ```
