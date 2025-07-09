@@ -375,10 +375,6 @@ hair_style_generator/
 │   │   ├── file_service.py      # ファイル処理
 │   │   ├── session_service.py   # セッション管理
 │   │   └── task_service.py      # Celery タスク
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── user_session.py      # ユーザーセッション
-│   │   └── generation_task.py   # 生成タスク
 │   ├── static/
 │   │   ├── css/
 │   │   │   └── main.css
@@ -395,11 +391,6 @@ hair_style_generator/
 │   │   ├── upload.html
 │   │   ├── generate.html
 │   │   └── gallery.html
-│   └── utils/
-│       ├── __init__.py
-│       ├── validators.py
-│       ├── image_processor.py
-│       └── helpers.py
 ├── tests/
 │   ├── conftest.py
 │   ├── test_services/

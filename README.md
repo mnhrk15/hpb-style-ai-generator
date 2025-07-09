@@ -45,8 +45,8 @@
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/your-repo/hair-style-ai-generator.git
-cd hair-style-ai-generator
+git clone https://github.com/your-repo/hpb-style-ai-generator.git
+cd hpb-style-ai-generator
 
 # 2. 環境変数設定
 cp env.example .env
@@ -182,7 +182,7 @@ graph TB
 ### ディレクトリ構造
 
 ```
-hair-style-ai-generator/
+hpb-style-ai-generator/
 ├── 📁 app/                     # メインアプリケーション
 │   ├── 📁 routes/              # URLルーティング
 │   ├── 📁 services/            # ビジネスロジック
@@ -410,33 +410,6 @@ docker-compose -f docker-compose.test.yml up -d
 3. テスト追加・実行
 4. Pull Request作成
 
-## 💰 コスト試算
-
-### API利用料金
-
-| サービス | 単価 | 月間想定 | 月額コスト |
-|---------|------|---------|-----------|
-| FLUX.1 Kontext | $0.06-0.08/画像 | 6,000画像 | $420 |
-| Gemini 2.5 Flash | 無料枠 | - | $0 |
-| **合計** | - | - | **$420/月** |
-
-### インフラコスト
-
-| 項目 | 月額 |
-|------|------|
-| VPS (4コア/8GB) | $50-100 |
-| Redis Cloud | $0-30 |
-| CDN | $20-50 |
-| **合計** | **$70-180/月** |
-
-## 📚 関連ドキュメント
-
-- [📖 完全要件定義書](docs/requirements.md)
-- [🔧 API詳細仕様](docs/api.md)
-- [🏗 アーキテクチャガイド](docs/architecture.md)
-- [🚀 デプロイメントガイド](docs/deployment.md)
-- [🧪 テストガイド](docs/testing.md)
-
 ## 📄 ライセンス
 
 このプロジェクトは商用ライセンスの下で提供されています。詳細は[LICENSE](LICENSE)ファイルをご確認ください。
@@ -445,14 +418,9 @@ docker-compose -f docker-compose.test.yml up -d
 
 ### バグ報告・機能要望
 
-- [GitHub Issues](https://github.com/your-repo/hair-style-ai-generator/issues)
-- [Discussions](https://github.com/your-repo/hair-style-ai-generator/discussions)
+- [GitHub Issues](https://github.com/your-repo/hpb-style-ai-generator/issues)
+- [Discussions](https://github.com/your-repo/hpb-style-ai-generator/discussions)
 
-### 技術サポート
-
-- 📧 Email: support@your-domain.com
-- 💬 Slack: #hair-style-ai-support
-- 📞 電話: 03-XXXX-XXXX（平日10:00-18:00）
 
 ### よくある質問
 
@@ -464,15 +432,3 @@ A: `.env`ファイルの`USER_DAILY_LIMIT`を変更してください。
 
 **Q: 商用利用は可能ですか？**
 A: はい、商用利用を前提として設計されています。ライセンス条項をご確認ください。
-
----
-
-<div align="center">
-
-**🎨 Hair Style AI Generator**
-
-*美容室の未来を、AIと共に*
-
-[🚀 今すぐ始める](#クイックスタート) • [📖 ドキュメント](docs/) • [💬 サポート](#サポート)
-
-</div> 
