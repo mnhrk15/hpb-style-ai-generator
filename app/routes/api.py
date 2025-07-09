@@ -8,6 +8,8 @@ from app import limiter
 from app.services.session_service import SessionService
 from app.services.gemini_service import GeminiService
 from app.services.flux_service import FluxService
+from app.services.scraping_service import ScrapingService
+from app.services.file_service import FileService
 import logging
 import os
 
@@ -17,6 +19,76 @@ api_bp = Blueprint('api', __name__)
 session_service = SessionService()
 gemini_service = GeminiService()
 flux_service = FluxService()
+scraping_service = ScrapingService()
+file_service = FileService()
+
+
+@api_bp.route('/scrape-image', methods=['POST'])
+@limiter.limit("20 per hour")
+def scrape_image_from_url():
+    """
+    URLから画像をスクレイピングして保存する
+    
+    Expected JSON:
+        {
+            "url": "https://beauty.hotpepper.jp/slnH000492277/style/L203128869.html"
+        }
+    
+    Returns:
+        JSON: 保存した画像のパス
+    """
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            user_id = session_service.create_user_session()
+            session['user_id'] = user_id
+            logger.info(f"新規セッション作成（スクレイピング時）: {user_id}")
+            
+        data = request.get_json()
+        page_url = data.get('url')
+        if not page_url:
+            return jsonify({'success': False, 'error': 'URLが指定されていません'}), 400
+
+        # HotPepperBeautyのセレクタを指定
+        selector = "#jsiHoverAlphaLayerScope > div.cFix.mT20.pH10 > div.fl > div.pr > img"
+        
+        # スクレイピング実行
+        image_url = scraping_service.get_image_from_url(page_url, selector)
+        
+        # 画像をダウンロードして保存
+        success, saved_path = file_service.save_generated_image(
+            image_url=image_url,
+            user_id=user_id,
+            original_filename=page_url.split('/')[-1].replace('.html', ''),
+            task_id="scraped"
+        )
+        
+        if not success:
+            return jsonify({'success': False, 'error': '画像の保存に失敗しました'}), 500
+
+        # セッションにアップロード済みとして追加
+        file_info = file_service.analyze_image_features(saved_path)
+        file_info_with_path = {
+            **file_info,
+            'web_path': saved_path.replace('app/', '/'),
+            'saved_path': saved_path,
+            'original_filename': f"scraped_{page_url.split('/')[-2]}.jpg"
+        }
+        session_service.add_uploaded_file(user_id, file_info_with_path)
+        
+        return jsonify({
+            'success': True,
+            'message': '画像の取得と保存が完了しました',
+            'data': {
+                'file_path': saved_path.replace('app/', '/'),
+                'original_filename': file_info_with_path['original_filename'],
+                'file_info': file_info
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"スクレイピングAPIエラー: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @api_bp.route('/health', methods=['GET'])

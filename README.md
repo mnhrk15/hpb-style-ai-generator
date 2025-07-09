@@ -15,6 +15,7 @@
 
 - **🤖 AI画像生成**: FLUX.1 Kontext Proによる高品質ヘアスタイル変更
 - **🌐 日本語対応**: Gemini 2.5 Flashによる自然な日本語プロンプト最適化
+- **🖼️ 柔軟な画像入力**: ファイルアップロードに加え、HotPepperBeautyスタイルページのURL直接指定に対応
 - **👥 マルチユーザー**: 複数美容師の同時利用対応
 - **⚡ リアルタイム**: Socket.IOによる生成進捗のリアルタイム表示
 - **📱 レスポンシブ**: Tailwind CSS 4.1による美しいモダンUI
@@ -126,22 +127,56 @@ SESSION_COOKIE_SAMESITE=Lax
 
 ```mermaid
 graph TB
-    A[Frontend<br/>HTML/CSS/JS<br/>Tailwind CSS 4.1] --> B[Flask App<br/>Routes & Controllers]
+    subgraph "User Interface"
+        direction LR
+        A[Frontend<br/>HTML/CSS/JS]
+        A_UPLOAD[File Upload]
+        A_URL[URL Input]
+    end
+
+    subgraph "Backend Server (Flask)"
+        direction TB
+        B[Routes & Controllers]
+        
+        subgraph "Business Logic Layer"
+            C[Services Layer]
+            D[Gemini Service<br/>プロンプト最適化]
+            E[Flux Service<br/>画像生成]
+            F[File Service<br/>ファイル処理]
+            S[Scraping Service<br/>URLから画像取得]
+        end
+        
+        G[Celery Worker<br/>非同期タスク処理]
+    end
+
+    subgraph "External Services & Storage"
+        direction TB
+        I[Gemini 2.5 Flash API]
+        J[FLUX.1 Kontext API]
+        H[Redis<br/>Queue & Session]
+        K[File Storage<br/>uploads/ & generated/]
+        HPB[HotPepper Beauty]
+    end
     
-    B --> C[Services Layer]
-    C --> D[Gemini Service<br/>プロンプト最適化]
-    C --> E[Flux Service<br/>画像生成]
-    C --> F[File Service<br/>ファイル処理]
+    L[Multiple Users] --> A_UPLOAD
+    L --> A_URL
+    A_UPLOAD --> B
+    A_URL --> B
+
+    B --> C
+    C --> D
+    C --> E
+    C --> F
+    C --> S
     
-    B --> G[Celery Worker<br/>非同期タスク処理]
-    G --> H[Redis<br/>Queue & Session]
+    B --> G
+    G --> H
     
-    D --> I[Gemini 2.5 Flash API]
-    E --> J[FLUX.1 Kontext API<br/>Pro利用]
+    D --> I
+    E --> J
+    S --> HPB
     
-    B --> K[File Storage<br/>uploads/ & generated/]
-    
-    L[Multiple Users] --> A
+    B --> K
 ```
 
 ### ディレクトリ構造
@@ -172,6 +207,7 @@ hair-style-ai-generator/
 | `/api/info` | GET | システム情報 | 50/時間 |
 | `/api/session` | GET/POST/DELETE | セッション管理 | 100/時間 |
 | `/upload` | POST | 画像アップロード | 20/時間 |
+| `/api/scrape-image` | POST | URLから画像取得 | 20/時間 |
 | `/generate` | POST | 画像生成開始 | 10/時間 |
 | `/api/stats` | GET | 統計情報 | 20/時間 |
 
@@ -182,6 +218,12 @@ hair-style-ai-generator/
 curl -X POST \
   -F "file=@sample.jpg" \
   http://localhost:5000/upload
+
+# URLから画像取得
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://beauty.hotpepper.jp/slnH000492277/style/L203128869.html"}' \
+  http://localhost:5000/api/scrape-image
 
 # 画像生成
 curl -X POST \

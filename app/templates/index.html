@@ -14,47 +14,65 @@
 </div>
 
 <!-- メインコンテンツ -->
-<div class="max-w-2xl mx-auto">
-    
-    <!-- 画像アップロード -->
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8">
-        <div id="upload-area" class="relative">
-            <!-- ドロップゾーン -->
-            <div id="drop-zone" class="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 cursor-pointer">
-                <div id="drop-content">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-medium text-slate-900 mb-2">画像をドロップまたは選択</h3>
-                    <p class="text-sm text-slate-500 mb-4">JPG, PNG, WebP（最大10MB）</p>
-                    <button type="button" class="inline-flex items-center px-6 py-3 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors">
-                        ファイル選択
+<main class="container mx-auto mt-8 p-4 bg-white rounded-lg shadow-lg max-w-4xl">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b-2 border-pink-200 pb-2">
+        1. AIで加工する画像を選ぶ
+    </h2>
+
+    <!-- タブ切り替え -->
+    <div x-data="{ tab: 'upload' }" class="mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button @click="tab = 'upload'" 
+                        :class="{ 'border-pink-500 text-pink-600': tab === 'upload', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'upload' }"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    ファイルをアップロード
+                </button>
+                <button @click="tab = 'url'" 
+                        :class="{ 'border-pink-500 text-pink-600': tab === 'url', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'url' }"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    URLから取得
+                </button>
+            </nav>
+        </div>
+
+        <!-- ファイルアップロードタブ -->
+        <div x-show="tab === 'upload'" id="upload-panel">
+            <div id="drop-zone" class="mt-4 flex justify-center items-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p class="mt-1 text-sm text-gray-600">
+                        ファイルをドラッグ＆ドロップ
+                    </p>
+                    <p class="text-xs text-gray-500">または</p>
+                    <button type="button" id="file-select" class="font-medium text-pink-600 hover:text-pink-500">
+                        ファイルを選択
                     </button>
-                </div>
-                
-                <!-- アップロード中 -->
-                <div id="upload-progress" class="hidden">
-                    <div class="animate-spin w-8 h-8 mx-auto mb-4">
-                        <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
-                    <p class="text-slate-600">アップロード中...</p>
-                </div>
-                
-                <!-- プレビュー -->
-                <div id="image-preview" class="hidden">
-                    <img id="preview-image" class="max-w-full h-48 object-cover rounded-xl mx-auto mb-4" alt="プレビュー">
-                    <p class="text-sm text-slate-500" id="file-name">ファイル名</p>
-                    <button id="remove-image" class="mt-2 text-sm text-slate-400 hover:text-slate-600">削除</button>
+                    <input type="file" id="file-input" class="hidden" accept="image/jpeg, image/png, image/webp">
+                    <p class="text-xs text-gray-500 mt-2">PNG, JPG, WebP (最大10MB)</p>
                 </div>
             </div>
-            
-            <input type="file" id="file-input" class="hidden" accept="image/jpeg,image/jpg,image/png,image/webp">
         </div>
+
+        <!-- URL入力タブ -->
+        <div x-show="tab === 'url'" id="url-panel" class="mt-4">
+            <div class="flex items-center space-x-2">
+                <input type="url" id="image-url-input" class="flex-grow block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-pink-500 focus:ring-pink-500 focus:outline-none focus:ring focus:ring-opacity-40" placeholder="HotPepperBeautyのスタイルページのURLを入力...">
+                <button id="fetch-image-btn" class="px-6 py-2 leading-5 text-white transition-colors duration-200 transform bg-pink-500 rounded-md hover:bg-pink-600 focus:outline-none focus:bg-pink-600">
+                    画像を取得
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">例: https://beauty.hotpepper.jp/slnH000000000/style/L000000000.html</p>
+        </div>
+    </div>
+
+    <!-- 画像プレビュー -->
+    <div id="image-preview-container" class="hidden mt-4 p-4 border rounded-lg bg-gray-50">
+        <img id="preview-image" class="max-w-full h-48 object-cover rounded-xl mx-auto mb-4" alt="プレビュー">
+        <p class="text-sm text-slate-500" id="file-name">ファイル名</p>
+        <button id="remove-image" class="mt-2 text-sm text-slate-400 hover:text-slate-600">削除</button>
     </div>
     
     <!-- プロンプト入力 -->
@@ -206,7 +224,7 @@
             </div>
         </div>
     </div>
-</div>
+</main>
 
 <!-- 統計情報（複数枚対応表示） -->
 <div class="max-w-md mx-auto mt-16">
