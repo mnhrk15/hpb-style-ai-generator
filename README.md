@@ -94,8 +94,9 @@ GEMINI_API_KEY=your_gemini_api_key_here
 BFL_API_KEY=your_bfl_api_key_here
 SECRET_KEY=your_secret_key_here
 
-# === Redis設定 ===
+# === Redis設定（本番環境ではパスワードが必須） ===
 REDIS_URL=redis://localhost:6379/0
+REDIS_PASSWORD=your_secure_password_here
 
 # === 制限設定 ===
 RATE_LIMIT_PER_DAY=200          # 1日あたりの生成制限
@@ -136,7 +137,8 @@ graph TB
 
     subgraph "Backend Server (Flask)"
         direction TB
-        B[Routes & Controllers]
+        B[Routes & Controllers<br/>(main, upload, generate, api)]
+        U[Utils<br/>@session_required]
         
         subgraph "Business Logic Layer"
             C[Services Layer]
@@ -160,9 +162,11 @@ graph TB
     
     L[Multiple Users] --> A_UPLOAD
     L --> A_URL
-    A_UPLOAD --> B
-    A_URL --> B
-
+    A_UPLOAD -- "file:uploaded<br/>CustomEvent" --> A
+    A_URL -- "file:uploaded<br/>CustomEvent" --> A
+    A -- "HTTP/Socket.IO" --> B
+    
+    B -- Decorator --> U
     B --> C
     C --> D
     C --> E
@@ -188,7 +192,7 @@ hpb-style-ai-generator/
 │   ├── 📁 services/            # ビジネスロジック
 │   ├── 📁 static/              # 静的ファイル
 │   ├── 📁 templates/           # HTMLテンプレート
-│   └── 📁 utils/               # ユーティリティ
+│   └── 📁 utils/               # 共通ユーティリティ (デコレータ等)
 ├── 📁 docker/                  # Docker設定
 ├── 📁 tests/                   # テストスイート
 ├── 📁 docs/                    # ドキュメント
@@ -234,18 +238,24 @@ curl -X POST \
 
 ### WebSocket イベント
 
+クライアントは`generation_progress`イベントを購読することで、生成の進捗をリアルタイムに受け取ることができます。
+
 ```javascript
 // Socket.IO接続
 const socket = io();
 
 // 進捗受信
 socket.on('generation_progress', (data) => {
-    console.log(`進捗: ${data.status}`);
-});
-
-// 完了通知
-socket.on('generation_complete', (data) => {
-    console.log('生成完了:', data.result_url);
+    // data.status: "processing", "completed", "failed"
+    // data.stage: "prompt_optimization", "image_generation", "saving", "finished", "error"
+    // data.message: 進捗メッセージ
+    console.log(`進捗[${data.stage}]: ${data.message}`);
+    
+    // 完了時
+    if (data.status === 'completed') {
+        console.log('生成完了:', data.result);
+        // data.result.generated_path などが含まれる
+    }
 });
 ```
 

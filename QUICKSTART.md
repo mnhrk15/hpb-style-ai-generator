@@ -96,7 +96,7 @@ redis-server
 
 ## 🎯 次のステップ
 
-1. **API設定**: .envファイルにGemini・FLUX.1 APIキーを追加
+1. **API設定**: `.env`ファイルに`Gemini`・`FLUX.1`のAPIキー、および本番用`SECRET_KEY`、`REDIS_PASSWORD`を追加
 2. **Redis設定**: 永続的なセッション管理のためRedis起動
 3. **Celery設定**: 非同期処理のためCeleryワーカー起動
 
