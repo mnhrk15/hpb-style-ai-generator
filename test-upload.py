@@ -8,6 +8,14 @@ import requests
 import io
 from PIL import Image
 import base64
+import os
+
+# 設定
+base_url = os.getenv('BASE_URL', 'http://127.0.0.1:5001')
+upload_url = f"{base_url}/upload"
+generate_url = f"{base_url}/generate"
+validate_url = f"{base_url}/upload/validate"
+scrape_url = f"{base_url}/api/scrape-image"
 
 def create_test_image():
     """テスト用の小さな画像を作成"""

@@ -108,6 +108,24 @@ class SessionService:
             if data:
                 session_data = json.loads(data)
                 
+                # 日付変更時に日次カウントをリセット
+                try:
+                    last_activity_str = session_data.get("last_activity")
+                    if last_activity_str:
+                        last_activity_date = datetime.fromisoformat(last_activity_str).date()
+                        today_utc = datetime.utcnow().date()
+                        
+                        if last_activity_date < today_utc:
+                            if session_data.get("daily_generation_count", 0) > 0:
+                                logger.info(
+                                    f"日付が変わったため日次生成カウントをリセットします: "
+                                    f"session_id={session_id}, "
+                                    f"old_count={session_data.get('daily_generation_count')}"
+                                )
+                                session_data["daily_generation_count"] = 0
+                except Exception as e:
+                    logger.error(f"日次カウントのリセット処理中にエラーが発生しました: {e}", exc_info=True)
+
                 # 明示的に指定された場合のみアクティビティ更新
                 if update_activity:
                     session_data["last_activity"] = datetime.utcnow().isoformat()

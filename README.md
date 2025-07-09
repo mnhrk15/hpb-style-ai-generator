@@ -56,7 +56,7 @@ cp env.example .env
 docker-compose up -d
 
 # アプリケーションにアクセス
-open http://localhost:5000
+open http://localhost:5001
 ```
 
 ### 🐍 ローカル開発環境
@@ -223,19 +223,19 @@ hpb-style-ai-generator/
 # 画像アップロード
 curl -X POST \
   -F "file=@sample.jpg" \
-  http://localhost:5000/upload
+  http://localhost:5001/upload
 
 # URLから画像取得
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"url": "https://beauty.hotpepper.jp/slnH000492277/style/L203128869.html"}' \
-  http://localhost:5000/api/scrape-image
+  http://localhost:5001/api/scrape-image
 
 # 画像生成
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"prompt": "ショートボブに変更してください", "image_id": "12345"}' \
-  http://localhost:5000/generate
+  http://localhost:5001/generate
 ```
 
 ### WebSocket イベント
@@ -366,7 +366,7 @@ celery -A run.celery_app worker --loglevel=info --concurrency=4
 
 ```bash
 # アプリケーション状態確認
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 
 # Redis接続確認
 redis-cli ping
