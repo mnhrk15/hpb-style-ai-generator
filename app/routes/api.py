@@ -10,6 +10,7 @@ from app.services.gemini_service import GeminiService
 from app.services.flux_service import FluxService
 from app.services.scraping_service import ScrapingService
 from app.services.file_service import FileService
+from app.utils.decorators import session_required
 import logging
 import os
 
@@ -25,6 +26,7 @@ file_service = FileService()
 
 @api_bp.route('/scrape-image', methods=['POST'])
 @limiter.limit("20 per hour")
+@session_required
 def scrape_image_from_url():
     """
     URLから画像をスクレイピングして保存する
@@ -39,10 +41,6 @@ def scrape_image_from_url():
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            logger.info(f"新規セッション作成（スクレイピング時）: {user_id}")
             
         data = request.get_json()
         page_url = data.get('url')
@@ -180,6 +178,7 @@ def system_info():
 
 @api_bp.route('/stats', methods=['GET'])
 @limiter.limit("20 per hour")
+@session_required
 def system_stats():
     """
     システム統計情報取得
@@ -195,15 +194,14 @@ def system_stats():
         user_id = session.get('user_id')
         user_stats = {}
         
-        if user_id:
-            session_data = session_service.get_session_data(user_id)
-            if session_data:
-                user_stats = {
-                    'daily_generations': session_data.get('daily_generation_count', 0),
-                    'total_generations': session_data.get('total_generation_count', 0),
-                    'uploaded_files': len(session_data.get('uploaded_files', [])),
-                    'active_tasks': len(session_data.get('active_tasks', []))
-                }
+        session_data = session_service.get_session_data(user_id)
+        if session_data:
+            user_stats = {
+                'daily_generations': session_data.get('daily_generation_count', 0),
+                'total_generations': session_data.get('total_generation_count', 0),
+                'uploaded_files': len(session_data.get('uploaded_files', [])),
+                'active_tasks': len(session_data.get('active_tasks', []))
+            }
         
         stats = {
             'system': session_stats,
@@ -225,6 +223,7 @@ def system_stats():
 
 @api_bp.route('/session', methods=['GET'])
 @limiter.limit("100 per hour")
+@session_required
 def get_session_info():
     """
     現在のセッション情報取得
@@ -234,12 +233,6 @@ def get_session_info():
     """
     try:
         user_id = session.get('user_id')
-        
-        if not user_id:
-            return jsonify({
-                'authenticated': False,
-                'message': 'セッションが見つかりません'
-            })
         
         session_data = session_service.get_session_data(user_id)
         
@@ -419,6 +412,7 @@ def test_flux_api():
 
 @api_bp.route('/gallery/<string:image_id>', methods=['DELETE'])
 @limiter.limit("20 per hour")
+@session_required
 def delete_gallery_image(image_id):
     """
     ギャラリー画像削除
@@ -431,11 +425,6 @@ def delete_gallery_image(image_id):
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': '認証が必要です'
-            }), 401
         
         # セッションデータ取得
         session_data = session_service.get_session_data(user_id)
@@ -515,6 +504,7 @@ def delete_gallery_image(image_id):
 
 @api_bp.route('/gallery/search', methods=['GET'])
 @limiter.limit("30 per hour")
+@session_required
 def search_gallery():
     """
     ギャラリー検索
@@ -529,11 +519,6 @@ def search_gallery():
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': '認証が必要です'
-            }), 401
         
         # クエリパラメータ取得
         search_query = request.args.get('q', '').lower().strip()

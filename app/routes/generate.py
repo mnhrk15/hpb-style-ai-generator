@@ -8,6 +8,7 @@ from app import limiter, socketio
 from app.services.task_service import TaskService
 from app.services.session_service import SessionService
 from app.services.file_service import FileService
+from app.utils.decorators import session_required
 from flask_socketio import emit, join_room
 import os
 import logging
@@ -23,6 +24,7 @@ file_service = FileService()
 
 @generate_bp.route('/', methods=['POST'])
 @limiter.limit("10 per hour")  # 生成制限
+@session_required
 def generate_hairstyle():
     """
     ヘアスタイル画像生成開始（複数画像対応）
@@ -42,23 +44,9 @@ def generate_hairstyle():
     try:
         # セッション確認・自動作成
         user_id = session.get('user_id')
-        if not user_id:
-            # セッションが存在しない場合は新規作成
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True  # セッション永続化
-            logger.info(f"新規セッション作成（生成時）: {user_id}")
             
         # セッションデータの存在確認（アクティビティ更新付き）
-        session_data = session_service.get_session_data(user_id, update_activity=True)
-        if not session_data:
-            # セッションデータが失われている場合は再作成
-            user_id = session_service.create_user_session()
-            session['user_id'] = user_id
-            session.permanent = True
-            logger.info(f"セッションデータ再作成: {user_id}")
-            # 再作成後のデータ確認
-            session_data = session_service.get_session_data(user_id, update_activity=False)
+        session_service.get_session_data(user_id, update_activity=True)
         
         # リクエストデータ取得
         data = request.get_json()
@@ -169,6 +157,7 @@ def generate_hairstyle():
 
 @generate_bp.route('/status/<task_id>', methods=['GET'])
 @limiter.limit("100 per hour")
+@session_required
 def get_generation_status(task_id):
     """
     生成タスクの状態取得
@@ -181,11 +170,6 @@ def get_generation_status(task_id):
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': 'セッションが見つかりません'
-            }), 401
         
         # タスク状態取得
         status_info = task_service.get_task_status(task_id)
@@ -205,6 +189,7 @@ def get_generation_status(task_id):
 
 @generate_bp.route('/cancel/<task_id>', methods=['POST'])
 @limiter.limit("20 per hour")
+@session_required
 def cancel_generation(task_id):
     """
     生成タスクのキャンセル
@@ -217,11 +202,6 @@ def cancel_generation(task_id):
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': 'セッションが見つかりません'
-            }), 401
         
         # タスクキャンセル
         success = task_service.cancel_task(task_id, user_id)
@@ -247,6 +227,7 @@ def cancel_generation(task_id):
 
 @generate_bp.route('/history', methods=['GET'])
 @limiter.limit("100 per hour")
+@session_required
 def generation_history():
     """
     ユーザーの生成履歴取得
@@ -256,11 +237,6 @@ def generation_history():
     """
     try:
         user_id = session.get('user_id')
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'error': 'セッションが見つかりません'
-            }), 401
         
         # セッションデータ取得
         session_data = session_service.get_session_data(user_id)
@@ -298,6 +274,7 @@ def generation_history():
 
 # SocketIOイベントハンドラー
 @socketio.on('join_user_room')
+@session_required
 def handle_join_user_room(data):
     """
     ユーザールームへの参加（リアルタイム進捗通知用）

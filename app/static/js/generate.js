@@ -27,10 +27,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const successCountSpan = document.getElementById('success-count');
     const totalCountSpan = document.getElementById('total-count');
     
+    let uploadedFileInfo = null; // ローカルスコープでファイル情報を管理
     let currentCount = 1; // 現在選択されている生成枚数
     let currentTaskId = null;
     let isGenerating = false;
     
+    // --- イベント購読 ---
+    document.addEventListener('file:uploaded', (e) => {
+        uploadedFileInfo = e.detail;
+        updateGenerateButton();
+    });
+
+    document.addEventListener('file:cleared', () => {
+        uploadedFileInfo = null;
+        updateGenerateButton();
+    });
+
+
     // プロンプト入力の文字数カウントと状態更新
     if (promptInput && charCount) {
         // 重複イベントリスナーを防ぐためのフラグチェック
@@ -94,18 +107,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateGenerateButton() {
-        const uploadedFile = window.uploadedFileInfo;
         
         // デバッグログ（開発環境のみ）
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.log('=== ボタン状態更新 ===');
-            console.log('uploadedFileInfo:', uploadedFile);
+            console.log('uploadedFileInfo:', uploadedFileInfo);
             console.log('prompt:', promptInput?.value);
             console.log('isGenerating:', isGenerating);
             console.log('currentCount:', currentCount);
         }
         
-        if (!uploadedFile) {
+        if (!uploadedFileInfo) {
             generateBtn.disabled = true;
             btnText.textContent = '画像をアップロードしてください';
             return;
@@ -142,9 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isGenerating) return;
         
         const prompt = promptInput.value.trim();
-        const uploadedFile = window.uploadedFileInfo;
         
-        if (!uploadedFile || !prompt) {
+        if (!uploadedFileInfo || !prompt) {
             showAlert('error', '画像とプロンプトの両方が必要です');
             return;
         }
@@ -168,9 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // 生成リクエスト送信
             const response = await axios.post('/generate/', {
-                file_path: uploadedFile.path,
+                file_path: uploadedFileInfo.path,
                 japanese_prompt: prompt,
-                original_filename: uploadedFile.filename,
+                original_filename: uploadedFileInfo.filename,
                 count: currentCount,
                 seed: Math.floor(Math.random() * 100000) // ランダムシード
             });
@@ -522,8 +533,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.UploadManager.clearFile();
             }
             
-            // window.uploadedFileInfoも確実にクリア
-            window.uploadedFileInfo = null;
+            // uploadedFileInfoも確実にクリア
+            uploadedFileInfo = null;
             
             updateGenerateButton();
             
@@ -560,16 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 外部からのアクセス用インターフェース
-    window.GenerateManager = {
-        updateButton: updateGenerateButton,
-        selectCount: selectCount,
-        resetState: function() {
-            resetGenerationState();
-            selectCount(1);
-            updateGenerateButton();
-        }
-    };
+    // 外部からのアクセス用インターフェースは不要になったので削除
     
     // Socket.IOルーム参加（確実に実行）
     function joinUserRoom() {

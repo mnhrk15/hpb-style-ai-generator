@@ -37,9 +37,8 @@
             <div class="grid grid-cols-2 gap-0">
                 <!-- Before -->
                 <div class="relative aspect-square bg-slate-50">
-                    {% if image.uploaded_path %}
-                        {% set original_url = image.uploaded_path.replace('app/', '/') if image.uploaded_path.startswith('app/') else image.uploaded_path %}
-                        <img src="{{ original_url }}" alt="変更前" class="w-full h-full object-cover" 
+                    {% if image.uploaded_url %}
+                        <img src="{{ image.uploaded_url }}" alt="変更前" class="w-full h-full object-cover" 
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+画像が見つかりません</dGV4dD48L3N2Zz4='">
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
@@ -53,9 +52,8 @@
                 
                 <!-- After -->
                 <div class="relative aspect-square bg-slate-50">
-                    {% if image.generated_path %}
-                        {% set generated_url = image.generated_path.replace('app/', '/') if image.generated_path.startswith('app/') else image.generated_path %}
-                        <img src="{{ generated_url }}" alt="変更後" class="w-full h-full object-cover"
+                    {% if image.generated_url %}
+                        <img src="{{ image.generated_url }}" alt="変更後" class="w-full h-full object-cover"
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+生成中または<L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+エラー</dGV4dD48L3N2Zz4='">
                     {% else %}
                         <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
@@ -77,14 +75,14 @@
                 <div class="flex items-center justify-between text-xs text-slate-400">
                     <span>{{ image.generated_at.strftime('%Y年%m月%d日 %H:%M') if image.generated_at else '' }}</span>
                     <div class="flex space-x-2">
-                        {% if image.generated_path %}
-                        <button onclick="downloadImage('{{ generated_url }}', '{{ image.original_filename }}')" 
+                        {% if image.generated_url %}
+                        <button onclick="downloadImage('{{ image.generated_url }}', '{{ image.original_filename }}')" 
                                 class="text-slate-600 hover:text-slate-900 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                         </button>
-                        <button onclick="viewFullsize('{{ generated_url }}', '{{ image.original_filename }}')" 
+                        <button onclick="viewFullsize('{{ image.generated_url }}', '{{ image.original_filename }}')" 
                                 class="text-slate-600 hover:text-slate-900 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

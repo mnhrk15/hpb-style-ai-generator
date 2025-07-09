@@ -84,8 +84,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await axios.post('/upload/', formData);
             if (response.data.success) {
                 const data = response.data.data;
-                uploadedFilePath = data.file_path;
-                originalFilename = data.original_filename;
+                const fileInfo = { path: data.file_path, filename: data.original_filename };
+                
+                // イベントを発行して他のモジュールに通知
+                const event = new CustomEvent('file:uploaded', { detail: fileInfo });
+                document.dispatchEvent(event);
+
                 showToast('アップロード成功', 'success');
             } else {
                 throw new Error(response.data.error);
@@ -95,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearImagePreview();
         } finally {
             setLoading(dropZone, false);
-            updateGenerateButtonState();
+            // updateGenerateButtonState(); // generate.jsが自律的に更新するので不要
         }
     }
 
@@ -115,22 +119,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await axios.post('/api/scrape-image', { url });
             if (response.data.success) {
                 const data = response.data.data;
-                uploadedFilePath = data.file_path;
-                originalFilename = data.original_filename;
+                const fileInfo = { path: data.file_path, filename: data.original_filename };
 
-                // generate.js との状態を同期させる
-                if (window.GenerateManager) {
-                    window.GenerateManager.getUploadedFileInfo = () => ({
-                        path: uploadedFilePath,
-                        filename: originalFilename
-                    });
-                }
-                // フォールバックとしてグローバル変数も設定
-                 window.uploadedFileInfo = {
-                    path: uploadedFilePath,
-                    filename: originalFilename,
-                };
-
+                // イベントを発行して他のモジュールに通知
+                const event = new CustomEvent('file:uploaded', { detail: fileInfo });
+                document.dispatchEvent(event);
+                
                 showImagePreview(data.file_path, data.original_filename);
                 showToast('画像の取得に成功しました', 'success');
             } else {
@@ -141,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearImagePreview();
         } finally {
             setLoading(fetchImageButton, false, '画像を取得');
-            updateGenerateButtonState();
+            // updateGenerateButtonState(); // generate.jsが自律的に更新するので不要
         }
     }
 
@@ -164,24 +158,24 @@ document.addEventListener('DOMContentLoaded', function() {
      * 画像プレビューをクリアする
      */
     function clearImagePreview() {
-        uploadedFilePath = null;
-        originalFilename = null;
+        // イベントを発行して他のモジュールに通知
+        document.dispatchEvent(new CustomEvent('file:cleared'));
+
         fileInput.value = '';
         imageUrlInput.value = '';
         imagePreviewContainer.classList.add('hidden');
         previewImage.src = '';
         fileNameElement.textContent = '';
         if(dropZone) dropZone.classList.remove('hidden'); // ドロップゾーンを再表示
-        updateGenerateButtonState();
+        // updateGenerateButtonState(); // generate.jsが自律的に更新するので不要
     }
 
     /**
      * 生成ボタンの状態を更新する
      */
     function updateGenerateButtonState() {
-        const hasImage = !!uploadedFilePath;
-        const hasPrompt = promptInput.value.trim().length > 0;
-        generateButton.disabled = !hasImage || !hasPrompt;
+        // このモジュールは生成ボタンの状態を直接知る必要がなくなる
+        // この関数はローカルでのみ使用するか、削除する
     }
 
     /**
@@ -226,15 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // generate.js との連携
-    if(window.GenerateManager) {
-        // upload.js の状態を generate.js が参照できるようにする
-        window.GenerateManager.getUploadedFileInfo = () => {
-            if (!uploadedFilePath) return null;
-            return {
-                path: uploadedFilePath,
-                filename: originalFilename
-            };
-        };
-    }
+    // 外部からのアクセス用インターフェース
+    window.UploadManager = {
+        clearFile: clearImagePreview
+    };
 });
