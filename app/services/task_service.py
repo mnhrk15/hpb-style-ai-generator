@@ -143,11 +143,25 @@ class TaskService:
         logger.info(f"複数画像非同期ヘアスタイル生成タスク開始: {task.id} ({count}枚)")
         return task.id
 
+    def _prepare_generation_assets(self, file_path: str, japanese_prompt: str):
+        """
+        画像特徴分析・プロンプト最適化・Base64エンコードをまとめて実行
+        Args:
+            file_path (str): 画像ファイルパス
+            japanese_prompt (str): 日本語プロンプト
+        Returns:
+            tuple: (optimized_prompt, image_base64)
+        """
+        image_features = self.file_service.analyze_image_features(file_path)
+        image_analysis = f"解像度: {image_features.get('width')}x{image_features.get('height')}, 向き: {image_features.get('orientation')}"
+        optimized_prompt = self.gemini_service.optimize_hair_style_prompt(japanese_prompt, image_analysis)
+        image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
+        return optimized_prompt, image_base64
+
     def _execute_single_generation(self, user_id: str, file_path: str,
                                    japanese_prompt: str, original_filename: str, task_id: str,
                                    mode: str = 'kontext', mask_data: str = None):
         """単一画像生成のコアロジック"""
-        # サービスインスタンスはself経由で利用
         emit_progress = lambda data: self._emit_progress(user_id, data)
 
         emit_progress({
@@ -157,12 +171,7 @@ class TaskService:
             'message': 'プロンプトを最適化しています...'
         })
         
-        image_features = self.file_service.analyze_image_features(file_path)
-        image_analysis = f"解像度: {image_features.get('width')}x{image_features.get('height')}, 向き: {image_features.get('orientation')}"
-        
-        optimized_prompt = self.gemini_service.optimize_hair_style_prompt(
-            japanese_prompt, image_analysis
-        )
+        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt)
         
         emit_progress({
             'task_id': task_id,
@@ -171,7 +180,6 @@ class TaskService:
             'message': 'AI画像を生成しています...'
         })
         
-        image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
         if mode == 'fill' and mask_data:
             flux_task_id, polling_url = self.flux_service.generate_with_fill(image_base64, mask_data, optimized_prompt)
         else:
@@ -242,16 +250,13 @@ class TaskService:
             'message': 'プロンプトを最適化しています...', 'count': count, 'type': 'multiple'
         })
 
-        image_features = self.file_service.analyze_image_features(file_path)
-        image_analysis = f"解像度: {image_features.get('width')}x{image_features.get('height')}, 向き: {image_features.get('orientation')}"
-        optimized_prompt = self.gemini_service.optimize_hair_style_prompt(japanese_prompt, image_analysis)
+        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt)
 
         emit_progress({
             'task_id': task_id, 'status': 'processing', 'stage': 'image_generation',
             'message': f'{count}枚の画像を並行生成しています...', 'count': count, 'type': 'multiple'
         })
         
-        image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
         if mode == 'fill' and mask_data:
             # fillモード時は全て同じマスク・プロンプトで複数回呼び出し
             task_infos = []
