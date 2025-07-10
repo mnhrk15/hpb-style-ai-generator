@@ -51,7 +51,7 @@ def test_upload(base_url="http://127.0.0.1:5000"):
         print(f"メインページアクセス: {main_response.status_code}")
         
         # アップロードテスト
-        upload_url = f"{base_url}/upload/"
+        upload_url = f"{base_url}/upload"
         print(f"アップロード先: {upload_url}")
         
         response = session.post(upload_url, files=files, timeout=10)
