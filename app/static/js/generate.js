@@ -266,10 +266,23 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(joinUserRoom, 100);
         });
         
-        socket.on('disconnect', function() {
-            console.log('Socket.IO 接続断了');
+        // -------------------------------------------------------------------------
+    
+        /**
+         * ソケット切断時の処理
+         */
+        socket.on('disconnect', (reason) => {
+            console.warn(`ソケット接続切断: ${reason}`);
+            // サーバー側で切断された場合、自動再接続を試みる
+            if (reason === 'io server disconnect') {
+                // socket.connect();
+            }
+            // TODO: 必要に応じてUIに切断状態を表示
         });
         
+        /**
+         * ルーム参加成功時の処理
+         */
         socket.on('joined_room', function(data) {
             console.log('ルーム参加成功:', data);
         });

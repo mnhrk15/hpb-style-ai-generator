@@ -415,19 +415,6 @@ docker-compose logs -f web worker
 
 ## 🤝 開発・貢献
 
-### 開発環境セットアップ
-
-```bash
-# 開発依存関係インストール
-pip install -r requirements-dev.txt
-
-# Pre-commit hooks設定
-pre-commit install
-
-# テスト環境起動
-docker-compose -f docker-compose.test.yml up -d
-```
-
 ### コーディング規約
 
 - **Python**: PEP 8準拠
