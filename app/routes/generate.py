@@ -62,6 +62,8 @@ def generate_hairstyle():
         count = data.get('count', 1)  # デフォルト1枚
         base_seed = data.get('seed')  # オプション
         task_id_from_client = data.get('task_id') # フロントエンドから指定
+        mode = data.get('mode', 'kontext')
+        mask_data = data.get('mask_data')
         
         # 必須パラメータ確認
         if not all([file_path, japanese_prompt, original_filename, task_id_from_client]):
@@ -116,7 +118,9 @@ def generate_hairstyle():
                 file_path=file_path,
                 japanese_prompt=japanese_prompt,
                 original_filename=original_filename,
-                task_id=task_id_from_client
+                task_id=task_id_from_client,
+                mode=mode,
+                mask_data=mask_data
             )
         else:
             # 新しい複数生成
@@ -127,7 +131,9 @@ def generate_hairstyle():
                 original_filename=original_filename,
                 count=count,
                 base_seed=base_seed,
-                task_id=task_id_from_client
+                task_id=task_id_from_client,
+                mode=mode,
+                mask_data=mask_data
             )
         
         logger.info(f"ヘアスタイル生成開始: {user_id} - {task_id} ({count}枚)")

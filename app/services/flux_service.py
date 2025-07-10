@@ -524,3 +524,55 @@ class FluxService:
         success_count = len([r for r in saved_results if r['success']])
         logger.info(f"複数画像保存完了: {success_count}/{len(results)}枚成功")
         return saved_results 
+
+    def generate_with_fill(self, image_base64: str, mask_base64: str, prompt: str,
+                          steps: int = 50, guidance: float = 60, output_format: str = 'jpeg', safety_tolerance: int = 2) -> Optional[str]:
+        """
+        FLUX.1 Fill [pro] APIを使ってマスク領域のみを編集する画像生成
+        Args:
+            image_base64 (str): 元画像（base64エンコード）
+            mask_base64 (str): マスク画像（base64エンコード、白=編集、黒=保護）
+            prompt (str): プロンプト
+            steps (int): ステップ数
+            guidance (float): ガイダンス強度
+            output_format (str): jpeg/png
+            safety_tolerance (int): セーフティレベル
+        Returns:
+            str: タスクID（非同期処理用）
+        """
+        if not self.api_key:
+            raise Exception("BFL_API_KEY が設定されていません")
+        endpoint = f"{self.base_url}/flux-pro-1.0-fill"
+        # mask_base64はdata:image/png;base64,...形式の場合はカンマ以降のみ
+        if mask_base64 and mask_base64.startswith('data:'):
+            mask_base64 = mask_base64.split(',')[-1]
+        payload = {
+            "image": image_base64,
+            "mask": mask_base64,
+            "prompt": prompt,
+            "steps": steps,
+            "guidance": guidance,
+            "output_format": output_format,
+            "safety_tolerance": safety_tolerance
+        }
+        headers = {
+            "accept": "application/json",
+            "x-key": self.api_key,
+            "Content-Type": "application/json"
+        }
+        try:
+            timeout = current_app.config.get('FLUX_REQUEST_TIMEOUT_POST', 30)
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=timeout)
+            if response.status_code == 200:
+                result = response.json()
+                task_id = result.get("id")
+                polling_url = result.get("polling_url")
+                logger.info(f"FLUX.1 Fill生成タスク開始: {task_id}")
+                return task_id, polling_url
+            else:
+                error_msg = f"Fill API Error: {response.status_code} - {response.text}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"FLUX.1 Fill APIリクエストエラー: {e}")
+            raise Exception(f"Fill APIリクエスト失敗: {e}") 
