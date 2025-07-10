@@ -24,20 +24,32 @@ class SessionService:
     def __init__(self):
         """セッションサービスの初期化"""
         self.redis_client = None
-        self.session_timeout = 86400  # 24時間
+        # 設定はinit_appで適用されるか、current_appから取得される
         self._initialize_redis()
     
     def _initialize_redis(self):
         """Redis接続初期化"""
         try:
-            redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+            # アプリケーションコンテキストがある場合
+            if current_app:
+                redis_url = current_app.config['REDIS_URL']
+                socket_timeout = current_app.config['REDIS_SOCKET_TIMEOUT']
+                connect_timeout = current_app.config['REDIS_CONNECT_TIMEOUT']
+                health_check_interval = current_app.config['REDIS_HEALTH_CHECK_INTERVAL']
+            # コンテキストがない場合（初期化時など）
+            else:
+                redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+                socket_timeout = int(os.getenv('REDIS_SOCKET_TIMEOUT', '2'))
+                connect_timeout = int(os.getenv('REDIS_CONNECT_TIMEOUT', '2'))
+                health_check_interval = int(os.getenv('REDIS_HEALTH_CHECK_INTERVAL', '30'))
+
             self.redis_client = redis.from_url(
                 redis_url, 
                 decode_responses=True,
-                socket_timeout=2,  # 2秒タイムアウト
-                socket_connect_timeout=2,
+                socket_timeout=socket_timeout,
+                socket_connect_timeout=connect_timeout,
                 retry_on_timeout=True,
-                health_check_interval=30
+                health_check_interval=health_check_interval
             )
             
             # 接続テスト
@@ -74,10 +86,12 @@ class SessionService:
         
         if self.redis_client:
             try:
-                key = f"session:{session_id}"
+                session_timeout = current_app.config.get('SESSION_TIMEOUT', 86400)
+                key_prefix = current_app.config.get('SESSION_KEY_PREFIX', 'session:')
+                key = f"{key_prefix}{session_id}"
                 self.redis_client.setex(
                     key,
-                    self.session_timeout,
+                    session_timeout,
                     json.dumps(session_data)
                 )
                 logger.info(f"ユーザーセッション作成: {session_id}")
@@ -102,7 +116,8 @@ class SessionService:
             return self._get_fallback_session_data(session_id)
         
         try:
-            key = f"session:{session_id}"
+            key_prefix = current_app.config.get('SESSION_KEY_PREFIX', 'session:')
+            key = f"{key_prefix}{session_id}"
             data = self.redis_client.get(key)
             
             if data:
@@ -129,7 +144,8 @@ class SessionService:
                 # 明示的に指定された場合のみアクティビティ更新
                 if update_activity:
                     session_data["last_activity"] = datetime.utcnow().isoformat()
-                    self.redis_client.setex(key, self.session_timeout, json.dumps(session_data))
+                    session_timeout = current_app.config.get('SESSION_TIMEOUT', 86400)
+                    self.redis_client.setex(key, session_timeout, json.dumps(session_data))
                 
                 return session_data
             else:
@@ -155,7 +171,8 @@ class SessionService:
             return False
         
         try:
-            key = f"session:{session_id}"
+            key_prefix = current_app.config.get('SESSION_KEY_PREFIX', 'session:')
+            key = f"{key_prefix}{session_id}"
             # 無限再帰防止: アクティビティ更新なしで取得
             current_data = self.get_session_data(session_id, update_activity=False)
             
@@ -164,10 +181,11 @@ class SessionService:
                 current_data.update(data)
                 current_data["last_activity"] = datetime.utcnow().isoformat()
                 
+                session_timeout = current_app.config.get('SESSION_TIMEOUT', 86400)
                 # Redis更新（タイムアウト設定付き）
                 self.redis_client.setex(
                     key,
-                    self.session_timeout,
+                    session_timeout,
                     json.dumps(current_data)
                 )
                 return True
@@ -199,9 +217,10 @@ class SessionService:
         
         session_data["uploaded_files"].append(file_info)
         
-        # 最新10件のみ保持
-        if len(session_data["uploaded_files"]) > 10:
-            session_data["uploaded_files"] = session_data["uploaded_files"][-10:]
+        max_files = current_app.config.get('SESSION_MAX_UPLOADED_FILES', 10)
+        # 最新N件のみ保持
+        if len(session_data["uploaded_files"]) > max_files:
+            session_data["uploaded_files"] = session_data["uploaded_files"][-max_files:]
         
         return self.update_session_data(session_id, session_data)
     
@@ -231,9 +250,10 @@ class SessionService:
         if generation_info.get("generated_at", "").startswith(today):
             session_data["daily_generation_count"] += 1
         
-        # 最新20件のみ保持
-        if len(session_data["generated_images"]) > 20:
-            session_data["generated_images"] = session_data["generated_images"][-20:]
+        max_images = current_app.config.get('SESSION_MAX_GENERATED_IMAGES', 20)
+        # 最新N件のみ保持
+        if len(session_data["generated_images"]) > max_images:
+            session_data["generated_images"] = session_data["generated_images"][-max_images:]
         
         return self.update_session_data(session_id, session_data)
     
@@ -315,7 +335,8 @@ class SessionService:
             return 0
         
         # 古いタスクをクリーンアップ（10分以上前のタスク）
-        cutoff_time = datetime.utcnow() - timedelta(minutes=10)
+        cleanup_minutes = current_app.config.get('SESSION_ACTIVE_TASK_CLEANUP_MINS', 10)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=cleanup_minutes)
         active_tasks = []
         
         for task in session_data.get("active_tasks", []):
@@ -341,8 +362,9 @@ class SessionService:
             return 0
         
         try:
+            key_prefix = current_app.config.get('SESSION_KEY_PREFIX', 'session:')
             # セッション一覧取得
-            session_keys = self.redis_client.keys("session:*")
+            session_keys = self.redis_client.keys(f"{key_prefix}*")
             cleaned_count = 0
             
             for key in session_keys:
@@ -353,8 +375,9 @@ class SessionService:
                         session_data.get("last_activity", "")
                     )
                     
-                    # 24時間以上アクティビティがないセッションを削除
-                    if datetime.utcnow() - last_activity > timedelta(hours=24):
+                    session_timeout = current_app.config.get('SESSION_TIMEOUT', 86400)
+                    # N時間以上アクティビティがないセッションを削除
+                    if datetime.utcnow() - last_activity > timedelta(seconds=session_timeout):
                         self.redis_client.delete(key)
                         cleaned_count += 1
             
@@ -392,7 +415,8 @@ class SessionService:
             return {"error": "Redis接続なし"}
         
         try:
-            session_keys = self.redis_client.keys("session:*")
+            key_prefix = current_app.config.get('SESSION_KEY_PREFIX', 'session:')
+            session_keys = self.redis_client.keys(f"{key_prefix}*")
             active_sessions = 0
             total_generations = 0
             

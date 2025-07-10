@@ -22,8 +22,9 @@ class FluxService:
     
     def __init__(self):
         """FLUX.1 Kontextサービスの初期化"""
+        # アプリケーションコンテキストがないため、os.getenvで読み込む
         self.api_key = os.getenv('BFL_API_KEY')
-        self.base_url = "https://api.us1.bfl.ai/v1"
+        self.base_url = os.getenv('FLUX_API_BASE_URL', "https://api.us1.bfl.ai/v1")
         
         # API制限設定（要件定義書準拠）
         self.max_wait_time = int(os.getenv('FLUX_MAX_WAIT_TIME', '300'))  # 5分
@@ -56,10 +57,10 @@ class FluxService:
         if not self.api_key:
             raise Exception("BFL_API_KEY が設定されていません")
         
-        # プロンプト長制限チェック
-        if len(optimized_prompt.split()) > 450:  # 安全マージン
-            optimized_prompt = ' '.join(optimized_prompt.split()[:450])
-            logger.warning("プロンプトを512トークン制限内に調整しました")
+        # プロンプトのトークン数チェックはconfigから取得しない（ロジックの一部）
+        if len(optimized_prompt.split()) > self.prompt_max_tokens:
+            optimized_prompt = ' '.join(optimized_prompt.split()[:self.prompt_max_tokens])
+            logger.warning(f"プロンプトを{self.prompt_max_tokens}トークン制限内に調整しました")
         
         endpoint = f"{self.base_url}/flux-kontext-pro"
         
@@ -80,7 +81,8 @@ class FluxService:
         }
         
         try:
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+            timeout = current_app.config.get('FLUX_REQUEST_TIMEOUT_POST', 30)
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=timeout)
             
             if response.status_code == 200:
                 result = response.json()
@@ -119,7 +121,8 @@ class FluxService:
         params = {"id": task_id}
         
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+            timeout = current_app.config.get('FLUX_REQUEST_TIMEOUT_GET', 10)
+            response = requests.get(url, headers=headers, params=params, timeout=timeout)
             
             if response.status_code == 200:
                 result = response.json()
@@ -243,11 +246,12 @@ class FluxService:
             # ダミーリクエストで接続確認
             headers = {"accept": "application/json", "x-key": self.api_key}
             # get_resultエンドポイントで無効なIDを使って接続確認
+            timeout = current_app.config.get('FLUX_REQUEST_TIMEOUT_GET', 10)
             response = requests.get(
                 f"{self.base_url}/get_result",
                 headers=headers,
                 params={"id": "test"},
-                timeout=10
+                timeout=timeout
             )
             
             # 404やAPIキーエラー以外なら接続成功とみなす
@@ -295,8 +299,9 @@ class FluxService:
         Raises:
             Exception: API呼び出しエラー時
         """
-        if not 1 <= count <= 5:
-            raise ValueError("生成枚数は1~5枚の間で指定してください")
+        max_generations = current_app.config.get('FLUX_MAX_PARALLEL_GENERATIONS', 5)
+        if not 1 <= count <= max_generations:
+            raise ValueError(f"生成枚数は1~{max_generations}枚の間で指定してください")
         
         if not self.api_key:
             raise Exception("BFL_API_KEY が設定されていません")
