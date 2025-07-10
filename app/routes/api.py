@@ -455,9 +455,10 @@ def delete_gallery_image(image_id):
         try:
             # アップロード画像の削除
             if target_image.get('uploaded_path'):
+                filename = os.path.basename(target_image['uploaded_path'])
                 uploaded_file_path = os.path.join(
-                    current_app.root_path, 
-                    target_image['uploaded_path'].lstrip('/')
+                    current_app.config['UPLOAD_FOLDER_ABSPATH'],
+                    filename
                 )
                 if os.path.exists(uploaded_file_path):
                     os.remove(uploaded_file_path)
@@ -465,9 +466,10 @@ def delete_gallery_image(image_id):
             
             # 生成画像の削除
             if target_image.get('generated_path'):
+                filename = os.path.basename(target_image['generated_path'])
                 generated_file_path = os.path.join(
-                    current_app.root_path,
-                    target_image['generated_path'].lstrip('/')
+                    current_app.config['GENERATED_FOLDER_ABSPATH'],
+                    filename
                 )
                 if os.path.exists(generated_file_path):
                     os.remove(generated_file_path)
