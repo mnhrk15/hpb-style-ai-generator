@@ -73,7 +73,8 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     async function handleFileUpload(file) {
         // バリデーションは省略（既存のものを想定）
-        showImagePreview(URL.createObjectURL(file), file.name);
+        const objectUrl = URL.createObjectURL(file);
+        showImagePreview(objectUrl, file.name);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -84,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await axios.post('/upload/', formData);
             if (response.data.success) {
                 const data = response.data.data;
-                const fileInfo = { path: data.file_path, filename: data.original_filename };
+                const fileInfo = { path: data.file_path, filename: data.original_filename, url: objectUrl };
                 
                 // イベントを発行して他のモジュールに通知
                 const event = new CustomEvent('file:uploaded', { detail: fileInfo });
@@ -119,7 +120,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await axios.post('/api/scrape-image', { url });
             if (response.data.success) {
                 const data = response.data.data;
-                const fileInfo = { path: data.file_path, filename: data.original_filename };
+                // サーバー保存パスをそのままimg.srcに使えるようにする
+                const fileInfo = { path: data.file_path, filename: data.original_filename, url: data.file_path };
 
                 // イベントを発行して他のモジュールに通知
                 const event = new CustomEvent('file:uploaded', { detail: fileInfo });

@@ -36,6 +36,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('file:uploaded', (e) => {
         uploadedFileInfo = e.detail;
         updateGenerateButton();
+        // マスキングUIにも画像を表示
+        const img = document.getElementById('source-image-for-masking');
+        if (img && uploadedFileInfo && uploadedFileInfo.url) {
+            img.onload = function() {
+                console.log('[generate.js] img loaded', img.src, img.width, img.height);
+                if (window.maskingTool) {
+                    window.maskingTool.init('masking-canvas', 'source-image-for-masking');
+                }
+            };
+            // srcを一度空にしてからセットすることでonloadを確実に発火させる
+            img.src = '';
+            img.src = uploadedFileInfo.url;
+        }
     });
 
     document.addEventListener('file:cleared', () => {
@@ -43,7 +56,28 @@ document.addEventListener('DOMContentLoaded', function() {
         updateGenerateButton();
     });
 
-
+    // ブラシサイズ変更
+    const brushSizeInput = document.getElementById('brush-size');
+    if (brushSizeInput) {
+        brushSizeInput.addEventListener('input', function() {
+            if (window.maskingTool) window.maskingTool.setBrushSize(parseInt(this.value));
+        });
+    }
+    // Undo
+    const undoBtn = document.getElementById('undo-mask');
+    if (undoBtn) {
+        undoBtn.addEventListener('click', function() {
+            if (window.maskingTool) window.maskingTool.undo();
+        });
+    }
+    // リセット
+    const resetBtn = document.getElementById('reset-mask');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (window.maskingTool) window.maskingTool.clear();
+        });
+    }
+    
     // プロンプト入力の文字数カウントと状態更新
     if (promptInput && charCount) {
         // 重複イベントリスナーを防ぐためのフラグチェック
@@ -160,6 +194,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // 生成モード取得
+        let mode = 'kontext';
+        const modeRoot = document.querySelector('[x-data]');
+        if (modeRoot && modeRoot.__x) {
+            mode = modeRoot.__x.get('mode');
+        }
+        let maskData = null;
+        if (mode === 'fill') {
+            if (window.maskingTool) {
+                maskData = window.maskingTool.getMaskDataURL();
+                if (!maskData) {
+                    showAlert('error', 'マスクが描画されていません。');
+                    return;
+                }
+            }
+        }
+        
         isGenerating = true;
         updateGenerateButton();
         
@@ -188,7 +239,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 japanese_prompt: prompt,
                 original_filename: uploadedFileInfo.filename,
                 count: currentCount,
-                seed: Math.floor(Math.random() * 100000) // ランダムシード
+                seed: Math.floor(Math.random() * 100000), // ランダムシード
+                mode: mode,
+                mask_data: maskData
             });
             
             if (response.data.success) {

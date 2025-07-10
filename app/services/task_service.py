@@ -50,7 +50,9 @@ class TaskService:
     
     def generate_hairstyle_async(self, user_id: str, file_path: str, 
                                japanese_prompt: str, original_filename: str,
-                               task_id: Optional[str] = None) -> str:
+                               task_id: Optional[str] = None,
+                               mode: str = 'kontext',
+                               mask_data: str = None) -> str:
         """
         非同期ヘアスタイル生成タスクの開始
         
@@ -71,7 +73,7 @@ class TaskService:
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_hairstyle_task',
-            args=[user_id, file_path, japanese_prompt, original_filename],
+            args=[user_id, file_path, japanese_prompt, original_filename, mode, mask_data],
             task_id=task_id
         )
         
@@ -91,7 +93,9 @@ class TaskService:
     def generate_multiple_hairstyles_async(self, user_id: str, file_path: str, 
                                          japanese_prompt: str, original_filename: str, 
                                          count: int = 1, base_seed: Optional[int] = None,
-                                         task_id: Optional[str] = None) -> str:
+                                         task_id: Optional[str] = None,
+                                         mode: str = 'kontext',
+                                         mask_data: str = None) -> str:
         """
         複数画像非同期ヘアスタイル生成タスクの開始
         
@@ -120,7 +124,7 @@ class TaskService:
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_multiple_hairstyles_task',
-            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed],
+            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed, mode, mask_data],
             task_id=task_id
         )
         
@@ -140,7 +144,8 @@ class TaskService:
         return task.id
 
     def _execute_single_generation(self, user_id: str, file_path: str,
-                                   japanese_prompt: str, original_filename: str, task_id: str):
+                                   japanese_prompt: str, original_filename: str, task_id: str,
+                                   mode: str = 'kontext', mask_data: str = None):
         """単一画像生成のコアロジック"""
         # サービスインスタンスはself経由で利用
         emit_progress = lambda data: self._emit_progress(user_id, data)
@@ -167,7 +172,11 @@ class TaskService:
         })
         
         image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
-        flux_task_id = self.flux_service.generate_hair_style(image_base64, optimized_prompt)
+        if mode == 'fill' and mask_data:
+            flux_task_id, polling_url = self.flux_service.generate_with_fill(image_base64, mask_data, optimized_prompt)
+        else:
+            flux_task_id = self.flux_service.generate_hair_style(image_base64, optimized_prompt)
+            polling_url = None
         
         def progress_callback(progress_info):
             emit_progress({
@@ -223,7 +232,8 @@ class TaskService:
 
     def _execute_multiple_generation(self, user_id: str, file_path: str,
                                      japanese_prompt: str, original_filename: str,
-                                     count: int, base_seed: Optional[int], task_id: str):
+                                     count: int, base_seed: Optional[int], task_id: str,
+                                     mode: str = 'kontext', mask_data: str = None):
         """複数画像生成のコアロジック"""
         emit_progress = lambda data: self._emit_progress(user_id, data)
 
@@ -242,9 +252,16 @@ class TaskService:
         })
         
         image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
-        task_infos = self.flux_service.generate_multiple_hair_styles(
-            image_base64=image_base64, optimized_prompt=optimized_prompt, count=count, base_seed=base_seed
-        )
+        if mode == 'fill' and mask_data:
+            # fillモード時は全て同じマスク・プロンプトで複数回呼び出し
+            task_infos = []
+            for i in range(count):
+                flux_task_id, polling_url = self.flux_service.generate_with_fill(image_base64, mask_data, optimized_prompt)
+                task_infos.append({'id': flux_task_id, 'polling_url': polling_url})
+        else:
+            task_infos = self.flux_service.generate_multiple_hair_styles(
+                image_base64=image_base64, optimized_prompt=optimized_prompt, count=count, base_seed=base_seed
+            )
         
         def progress_callback(progress_info):
             completed = progress_info.get('completed', 0)
@@ -256,7 +273,15 @@ class TaskService:
                 'completed': completed, 'total': total, 'elapsed_time': elapsed, 'count': count, 'type': 'multiple'
             })
             
-        results = self.flux_service.poll_multiple_until_ready(task_infos, progress_callback=progress_callback)
+        if mode == 'fill' and mask_data:
+            results = []
+            for info in task_infos:
+                image_url, result_detail = self.flux_service.poll_until_ready(
+                    info['id'], progress_callback=progress_callback
+                )
+                results.append({'sample': image_url, 'task_id': info['id']})
+        else:
+            results = self.flux_service.poll_multiple_until_ready(task_infos, progress_callback=progress_callback)
         
         emit_progress({
             'task_id': task_id, 'status': 'processing', 'stage': 'saving',
@@ -482,13 +507,15 @@ def register_celery_tasks(celery_app: Celery):
     
     @celery_app.task(bind=True, name='app.services.task_service.generate_hairstyle_task')
     def generate_hairstyle_task(self, user_id: str, file_path: str, 
-                              japanese_prompt: str, original_filename: str):
+                              japanese_prompt: str, original_filename: str,
+                              mode: str = 'kontext',
+                              mask_data: str = None):
         """非同期ヘアスタイル生成タスク（Celery用）"""
         task_id = self.request.id
         task_service = TaskService(celery_app) # サービスインスタンス作成
         
         try:
-            return task_service._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id)
+            return task_service._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id, mode, mask_data)
         except Exception as e:
             logger.error(f"Celeryタスクエラー: {e}")
             task_service._emit_progress(user_id, {
@@ -504,13 +531,15 @@ def register_celery_tasks(celery_app: Celery):
     @celery_app.task(bind=True, name='app.services.task_service.generate_multiple_hairstyles_task')
     def generate_multiple_hairstyles_task(self, user_id: str, file_path: str, 
                                         japanese_prompt: str, original_filename: str, 
-                                        count: int = 1, base_seed: Optional[int] = None):
+                                        count: int = 1, base_seed: Optional[int] = None,
+                                        mode: str = 'kontext',
+                                        mask_data: str = None):
         """複数画像非同期ヘアスタイル生成タスク（Celery用）"""
         task_id = self.request.id
         task_service = TaskService(celery_app) # サービスインスタンス作成
         
         try:
-            return task_service._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id)
+            return task_service._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id, mode, mask_data)
         except Exception as e:
             logger.error(f"複数画像Celeryタスクエラー: {e}")
             task_service._emit_progress(user_id, {
