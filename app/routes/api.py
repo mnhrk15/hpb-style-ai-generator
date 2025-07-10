@@ -150,20 +150,20 @@ def system_info():
     try:
         info = {
             'app_name': 'Hair Style AI Generator',
-            'version': '1.0.0',
+            'version': current_app.config.get('APP_VERSION', '1.0.0'),
             'features': {
                 'max_file_size_mb': current_app.config.get('MAX_CONTENT_LENGTH', 10485760) // (1024 * 1024),
-                'supported_formats': ['JPG', 'PNG', 'WebP'],
+                'supported_formats': list(current_app.config.get('ALLOWED_EXTENSIONS', [])),
                 'daily_limit': current_app.config.get('USER_DAILY_LIMIT', 50),
-                'max_concurrent_tasks': current_app.config.get('MAX_CONCURRENT_TASKS', 3),
-                'max_resolution': '4096x4096',
-                'min_resolution': '256x256'
+                'max_concurrent_tasks': current_app.config.get('MAX_CONCURRENT_GENERATIONS', 5),
+                'max_resolution': current_app.config.get('IMAGE_MAX_RESOLUTION', '4096x4096'),
+                'min_resolution': current_app.config.get('IMAGE_MIN_RESOLUTION', '256x256')
             },
             'apis': {
-                'gemini_model': 'gemini-2.5-flash',
-                'flux_model': 'flux-kontext-pro',
+                'gemini_model': current_app.config.get('GEMINI_MODEL_NAME'),
+                'flux_model': current_app.config.get('FLUX_MODEL_NAME', 'flux-kontext-pro'),
                 'real_time_progress': True,
-                'webhook_support': False
+                'webhook_support': current_app.config.get('WEBHOOK_SUPPORT_ENABLED', False)
             }
         }
         

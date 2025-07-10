@@ -35,9 +35,19 @@ class BaseConfig:
     FLUX_MAX_WAIT_TIME = int(os.getenv('FLUX_MAX_WAIT_TIME', '300'))
     FLUX_POLLING_INTERVAL = float(os.getenv('FLUX_POLLING_INTERVAL', '1.5'))
     FLUX_PROMPT_MAX_TOKENS = int(os.getenv('FLUX_PROMPT_MAX_TOKENS', '512'))
+    FLUX_API_BASE_URL = os.getenv('FLUX_API_BASE_URL', "https://api.us1.bfl.ai/v1")
+    FLUX_REQUEST_TIMEOUT_POST = int(os.getenv('FLUX_REQUEST_TIMEOUT_POST', '30'))
+    FLUX_REQUEST_TIMEOUT_GET = int(os.getenv('FLUX_REQUEST_TIMEOUT_GET', '10'))
+    FLUX_MAX_PARALLEL_GENERATIONS = int(os.getenv('FLUX_MAX_PARALLEL_GENERATIONS', '5'))
+
+    # Gemini API設定
+    GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-1.5-flash')
     
     # Redis設定
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_SOCKET_TIMEOUT = int(os.getenv('REDIS_SOCKET_TIMEOUT', '2'))
+    REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', '2'))
+    REDIS_HEALTH_CHECK_INTERVAL = int(os.getenv('REDIS_HEALTH_CHECK_INTERVAL', '30'))
     
     # Celery設定
     CELERY_CONFIG = {
@@ -51,8 +61,12 @@ class BaseConfig:
     }
     
     # セッション設定
+    SESSION_KEY_PREFIX = os.getenv('SESSION_KEY_PREFIX', 'session:')
     SESSION_TIMEOUT = int(os.getenv('SESSION_TIMEOUT', '86400'))  # 24時間
     PERMANENT_SESSION_LIFETIME = timedelta(seconds=SESSION_TIMEOUT)
+    SESSION_MAX_UPLOADED_FILES = int(os.getenv('SESSION_MAX_UPLOADED_FILES', '10'))
+    SESSION_MAX_GENERATED_IMAGES = int(os.getenv('SESSION_MAX_GENERATED_IMAGES', '20'))
+    SESSION_ACTIVE_TASK_CLEANUP_MINS = int(os.getenv('SESSION_ACTIVE_TASK_CLEANUP_MINS', '10'))
     
     # レート制限設定
     RATELIMIT_STORAGE_URI = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -64,6 +78,12 @@ class BaseConfig:
     MAX_CONCURRENT_GENERATIONS = int(os.getenv('MAX_CONCURRENT_GENERATIONS', '5'))
     USER_DAILY_LIMIT = int(os.getenv('USER_DAILY_LIMIT', '50'))
     
+    # アプリケーション情報
+    APP_VERSION = os.getenv('APP_VERSION', '1.0.0')
+    IMAGE_MAX_RESOLUTION = os.getenv('IMAGE_MAX_RESOLUTION', '4096x4096')
+    IMAGE_MIN_RESOLUTION = os.getenv('IMAGE_MIN_RESOLUTION', '256x256')
+    WEBHOOK_SUPPORT_ENABLED = os.getenv('WEBHOOK_SUPPORT_ENABLED', 'False').lower() in ('true', '1', 't')
+
     # SocketIO設定
     SOCKETIO_ASYNC_MODE = 'eventlet'
     SOCKETIO_MESSAGE_QUEUE = REDIS_URL
