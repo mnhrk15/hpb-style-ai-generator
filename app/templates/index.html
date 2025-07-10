@@ -4,33 +4,33 @@
 
 {% block content %}
 <!-- メインヒーローセクション -->
-<div class="max-w-4xl mx-auto text-center mb-16">
-    <h1 class="text-5xl md:text-6xl font-light text-slate-900 mb-6">
+<div class="max-w-4xl mx-auto text-center mb-8 sm:mb-16">
+    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-slate-900 mb-4 sm:mb-6">
         Hair Style AI
     </h1>
-    <p class="text-xl text-slate-600 mb-8 font-light">
+    <p class="text-lg sm:text-xl text-slate-600 mb-6 sm:mb-8 font-light px-4">
         最新AIで、瞬時にヘアスタイルを変更
     </p>
 </div>
 
 <!-- メインコンテンツ -->
-<main class="container mx-auto mt-8 p-4 bg-white rounded-lg shadow-lg max-w-4xl">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b-2 border-pink-200 pb-2">
+<main class="container mx-auto mt-4 sm:mt-8 p-4 sm:p-6 bg-white rounded-lg shadow-lg max-w-4xl">
+    <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 border-b-2 border-pink-200 pb-2">
         1. AIで加工する画像を選ぶ
     </h2>
 
     <!-- タブ切り替え -->
-    <div x-data="{ tab: 'upload' }" class="mb-6">
+    <div x-data="{ tab: 'upload' }" class="mb-4 sm:mb-6">
         <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <nav class="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
                 <button @click="tab = 'upload'" 
                         :class="{ 'border-pink-500 text-pink-600': tab === 'upload', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'upload' }"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        class="whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm">
                     ファイルをアップロード
                 </button>
                 <button @click="tab = 'url'" 
                         :class="{ 'border-pink-500 text-pink-600': tab === 'url', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'url' }"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        class="whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm">
                     URLから取得
                 </button>
             </nav>
@@ -38,16 +38,16 @@
 
         <!-- ファイルアップロードタブ -->
         <div x-show="tab === 'upload'" id="upload-panel">
-            <div id="drop-zone" class="mt-4 flex justify-center items-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+            <div id="drop-zone" class="mt-4 flex justify-center items-center w-full h-48 sm:h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                <div class="text-center px-4">
+                    <svg class="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
-                    <p class="mt-1 text-sm text-gray-600">
+                    <p class="mt-1 text-xs sm:text-sm text-gray-600">
                         ファイルをドラッグ＆ドロップ
                     </p>
                     <p class="text-xs text-gray-500">または</p>
-                    <button type="button" id="file-select" class="font-medium text-pink-600 hover:text-pink-500">
+                    <button type="button" id="file-select" class="font-medium text-pink-600 hover:text-pink-500 text-sm">
                         ファイルを選択
                     </button>
                     <input type="file" id="file-input" class="hidden" accept="image/jpeg, image/png, image/webp">
@@ -58,9 +58,9 @@
 
         <!-- URL入力タブ -->
         <div x-show="tab === 'url'" id="url-panel" class="mt-4">
-            <div class="flex items-center space-x-2">
-                <input type="url" id="image-url-input" class="flex-grow block w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:border-pink-500 focus:ring-pink-500 focus:outline-none focus:ring focus:ring-opacity-40" placeholder="HotPepperBeautyのスタイルページのURLを入力...">
-                <button id="fetch-image-btn" class="px-6 py-2 leading-5 text-white transition-colors duration-200 transform bg-pink-500 rounded-md hover:bg-pink-600 focus:outline-none focus:bg-pink-600">
+            <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <input type="url" id="image-url-input" class="flex-grow block w-full px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 bg-white border border-gray-300 rounded-md focus:border-pink-500 focus:ring-pink-500 focus:outline-none focus:ring focus:ring-opacity-40" placeholder="HotPepperBeautyのスタイルページのURLを入力...">
+                <button id="fetch-image-btn" class="w-full sm:w-auto px-4 sm:px-6 py-2 leading-5 text-white transition-colors duration-200 transform bg-pink-500 rounded-md hover:bg-pink-600 focus:outline-none focus:bg-pink-600 text-sm">
                     画像を取得
                 </button>
             </div>
@@ -69,45 +69,49 @@
     </div>
 
     <!-- 画像プレビュー -->
-    <div id="image-preview-container" class="hidden mt-4 p-4 border rounded-lg bg-gray-50">
-        <img id="preview-image" class="max-w-full h-48 object-cover rounded-xl mx-auto mb-4" alt="プレビュー">
-        <p class="text-sm text-slate-500" id="file-name">ファイル名</p>
-        <button id="remove-image" class="mt-2 text-sm text-slate-400 hover:text-slate-600">削除</button>
+    <div id="image-preview-container" class="hidden mt-4 p-3 sm:p-4 border rounded-lg bg-gray-50">
+        <img id="preview-image" class="max-w-full h-40 sm:h-48 object-cover rounded-xl mx-auto mb-3 sm:mb-4" alt="プレビュー">
+        <p class="text-xs sm:text-sm text-slate-500" id="file-name">ファイル名</p>
+        <button id="remove-image" class="mt-2 text-xs sm:text-sm text-slate-400 hover:text-slate-600">削除</button>
     </div>
     
     <!-- 生成モード切替（マスクなし/マスクあり） -->
-    <div x-data="{ mode: 'kontext' }" class="mb-8">
+    <div x-data="{ mode: 'kontext' }" class="mb-6 sm:mb-8">
         <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button @click="mode = 'kontext'" :class="{ 'border-slate-500 text-slate-600': mode === 'kontext', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': mode !== 'kontext' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">かんたん生成（マスクなし）</button>
-                <button @click="mode = 'fill'" :class="{ 'border-slate-500 text-slate-600': mode === 'fill', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': mode !== 'fill' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">こだわり生成（マスクあり）</button>
+            <nav class="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
+                <button @click="mode = 'kontext'" :class="{ 'border-slate-500 text-slate-600': mode === 'kontext', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': mode !== 'kontext' }" class="whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm">かんたん生成（マスクなし）</button>
+                <button @click="mode = 'fill'" :class="{ 'border-slate-500 text-slate-600': mode === 'fill', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': mode !== 'fill' }" class="whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm">こだわり生成（マスクあり）</button>
             </nav>
         </div>
         <div x-show="mode === 'fill'" class="mt-4">
-            <p class="text-sm text-gray-600 mb-2">変更したい髪の部分を白く塗りつぶしてください。</p>
-            <div id="masking-area" class="relative w-full max-w-md aspect-square mt-2 border rounded-lg overflow-hidden mx-auto">
+            <p class="text-xs sm:text-sm text-gray-600 mb-2 px-2 text-center">変更したい髪の部分を白く塗りつぶしてください。</p>
+            <div id="masking-area" class="relative w-full max-w-xs sm:max-w-md aspect-square mt-2 border rounded-lg overflow-hidden mx-auto">
                 <img id="source-image-for-masking" class="absolute top-0 left-0 w-full h-full object-contain select-none pointer-events-none">
                 <canvas id="masking-canvas" class="absolute top-0 left-0 w-full h-full opacity-50 cursor-crosshair"></canvas>
             </div>
-            <div class="flex items-center space-x-4 mt-4 justify-center">
-                <label for="brush-size">ブラシサイズ:</label>
-                <input type="range" id="brush-size" min="5" max="50" value="20">
-                <button type="button" id="undo-mask" class="px-4 py-2 bg-gray-200 rounded">元に戻す</button>
-                <button type="button" id="reset-mask" class="px-4 py-2 bg-gray-200 rounded">リセット</button>
+            <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-4 justify-center px-4">
+                <div class="flex items-center space-x-2 justify-center">
+                    <label for="brush-size" class="text-xs sm:text-sm">ブラシサイズ:</label>
+                    <input type="range" id="brush-size" min="5" max="50" value="20" class="w-20 sm:w-auto">
+                </div>
+                <div class="flex space-x-2 justify-center">
+                    <button type="button" id="undo-mask" class="px-3 sm:px-4 py-2 bg-gray-200 rounded text-xs sm:text-sm">元に戻す</button>
+                    <button type="button" id="reset-mask" class="px-3 sm:px-4 py-2 bg-gray-200 rounded text-xs sm:text-sm">リセット</button>
+                </div>
             </div>
         </div>
     </div>
     
     <!-- プロンプト入力 -->
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
         <form id="generation-form">
-            <div class="mb-6">
-                <label for="prompt-input" class="block text-sm font-medium text-slate-700 mb-3">
+            <div class="mb-4 sm:mb-6">
+                <label for="prompt-input" class="block text-sm font-medium text-slate-700 mb-2 sm:mb-3">
                     どのように変更しますか？
                 </label>
                 <textarea 
                     id="prompt-input" 
-                    class="w-full px-4 py-3 border border-slate-200 rounded-xl resize-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                    class="w-full px-3 sm:px-4 py-2 sm:py-3 border border-slate-200 rounded-lg sm:rounded-xl resize-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all text-sm sm:text-base"
                     rows="3"
                     placeholder="例：ショートボブに変更して、髪色を茶色にしてください"
                     maxlength="300"
@@ -120,72 +124,72 @@
             </div>
             
             <!-- クイック選択 -->
-            <div class="mb-8">
-                <p class="text-sm text-slate-500 mb-3">よく使われるスタイル：</p>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ショートボブに変更してください">
+            <div class="mb-6 sm:mb-8">
+                <p class="text-sm text-slate-500 mb-2 sm:mb-3">よく使われるスタイル：</p>
+                <div class="flex flex-wrap gap-1.5 sm:gap-2">
+                    <button type="button" class="quick-style px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ショートボブに変更してください">
                         ショートボブ
                     </button>
-                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ロングヘアにして、ゆるいウェーブをかけてください">
+                    <button type="button" class="quick-style px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="ロングヘアにして、ゆるいウェーブをかけてください">
                         ロングウェーブ
                     </button>
-                    <button type="button" class="quick-style px-4 py-2 text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="髪色を明るい茶色に変更してください">
+                    <button type="button" class="quick-style px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-slate-50 text-slate-700 rounded-full hover:bg-slate-100 transition-colors" data-prompt="髪色を明るい茶色に変更してください">
                         明るい茶色
                     </button>
                 </div>
             </div>
             
             <!-- 生成枚数選択 -->
-            <div class="mb-8">
-                <label class="block text-sm font-medium text-slate-700 mb-3">
+            <div class="mb-6 sm:mb-8">
+                <label class="block text-sm font-medium text-slate-700 mb-2 sm:mb-3">
                     生成枚数を選択
                 </label>
-                <div class="flex gap-2">
-                    <button type="button" class="count-selector active px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="1">
+                <div class="flex flex-wrap gap-1.5 sm:gap-2">
+                    <button type="button" class="count-selector active px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg sm:rounded-xl hover:bg-slate-50 transition-colors" data-count="1">
                         1枚
                     </button>
-                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="2">
+                    <button type="button" class="count-selector px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg sm:rounded-xl hover:bg-slate-50 transition-colors" data-count="2">
                         2枚
                     </button>
-                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="3">
+                    <button type="button" class="count-selector px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg sm:rounded-xl hover:bg-slate-50 transition-colors" data-count="3">
                         3枚
                     </button>
-                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="4">
+                    <button type="button" class="count-selector px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg sm:rounded-xl hover:bg-slate-50 transition-colors" data-count="4">
                         4枚
                     </button>
-                    <button type="button" class="count-selector px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" data-count="5">
+                    <button type="button" class="count-selector px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 rounded-lg sm:rounded-xl hover:bg-slate-50 transition-colors" data-count="5">
                         5枚
                     </button>
                 </div>
-                <div class="flex justify-between items-center mt-2">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 space-y-1 sm:space-y-0">
                     <span class="text-xs text-slate-400">多様な結果を得るため複数枚生成をお勧めします</span>
                     <span id="estimated-time" class="text-xs text-slate-400">予想時間: 60-180秒</span>
                 </div>
             </div>
             
             <!-- 生成ボタン -->
-            <button type="submit" id="generate-btn" class="w-full py-4 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all" disabled>
+            <button type="submit" id="generate-btn" class="w-full py-3 sm:py-4 bg-slate-900 text-white rounded-lg sm:rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base" disabled>
                 <span id="btn-text">画像をアップロードしてください</span>
             </button>
         </form>
     </div>
     
     <!-- 生成結果（複数画像対応） -->
-    <div id="result-section" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-        <h2 class="text-xl font-medium text-slate-900 mb-6 text-center">生成結果</h2>
+    <div id="result-section" class="hidden bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8">
+        <h2 class="text-lg sm:text-xl font-medium text-slate-900 mb-4 sm:mb-6 text-center">生成結果</h2>
         
         <!-- 単数結果表示 -->
         <div id="single-result" class="hidden">
-            <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 text-center">変更前</p>
-                    <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                    <p class="text-xs sm:text-sm text-slate-500 mb-2 text-center">変更前</p>
+                    <div class="aspect-square bg-slate-50 rounded-lg sm:rounded-xl overflow-hidden">
                         <img id="before-image" class="w-full h-full object-cover" alt="変更前">
                     </div>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500 mb-2 text-center">変更後</p>
-                    <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden">
+                    <p class="text-xs sm:text-sm text-slate-500 mb-2 text-center">変更後</p>
+                    <div class="aspect-square bg-slate-50 rounded-lg sm:rounded-xl overflow-hidden">
                         <img id="after-image" class="w-full h-full object-cover" alt="変更後">
                     </div>
                 </div>
@@ -194,49 +198,49 @@
         
         <!-- 複数結果表示 -->
         <div id="multiple-result" class="hidden">
-            <div class="mb-6">
-                <p class="text-sm text-slate-500 mb-3 text-center">変更前</p>
+            <div class="mb-4 sm:mb-6">
+                <p class="text-xs sm:text-sm text-slate-500 mb-2 sm:mb-3 text-center">変更前</p>
                 <div class="flex justify-center">
-                    <div class="w-48 h-48 bg-slate-50 rounded-xl overflow-hidden">
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 bg-slate-50 rounded-lg sm:rounded-xl overflow-hidden">
                         <img id="original-image-multiple" class="w-full h-full object-cover" alt="変更前">
                     </div>
                 </div>
             </div>
             
-            <div class="mb-6">
-                <div class="flex justify-between items-center mb-3">
-                    <p class="text-sm text-slate-500">生成結果 (<span id="success-count">0</span>/<span id="total-count">0</span>枚)</p>
-                    <button id="download-all-btn" class="hidden text-sm text-slate-600 hover:text-slate-900">すべてダウンロード</button>
+            <div class="mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 sm:mb-3 space-y-1 sm:space-y-0">
+                    <p class="text-xs sm:text-sm text-slate-500">生成結果 (<span id="success-count">0</span>/<span id="total-count">0</span>枚)</p>
+                    <button id="download-all-btn" class="hidden text-xs sm:text-sm text-slate-600 hover:text-slate-900 self-start sm:self-auto">すべてダウンロード</button>
                 </div>
-                <div id="generated-images-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div id="generated-images-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                     <!-- 動的に生成される画像 -->
                 </div>
             </div>
         </div>
         
-        <div class="flex justify-center gap-4">
-            <button id="download-btn" class="px-6 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+        <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+            <button id="download-btn" class="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white rounded-lg sm:rounded-xl hover:bg-slate-800 transition-colors text-sm sm:text-base">
                 ダウンロード
             </button>
-            <button id="new-generation-btn" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+            <button id="new-generation-btn" class="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-slate-100 text-slate-700 rounded-lg sm:rounded-xl hover:bg-slate-200 transition-colors text-sm sm:text-base">
                 新しい生成
             </button>
         </div>
     </div>
     
     <!-- 生成中ステータス（複数画像対応） -->
-    <div id="generation-status" class="hidden bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+    <div id="generation-status" class="hidden bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8">
         <div class="text-center">
-            <div class="w-12 h-12 mx-auto mb-4">
-                <div class="animate-spin w-12 h-12">
-                    <svg class="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4">
+                <div class="animate-spin w-10 h-10 sm:w-12 sm:h-12">
+                    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
             </div>
-            <h3 id="status-title" class="text-lg font-medium text-slate-900 mb-2">画像を生成中...</h3>
-            <p id="status-message" class="text-sm text-slate-500">しばらくお待ちください（通常60-180秒）</p>
+            <h3 id="status-title" class="text-base sm:text-lg font-medium text-slate-900 mb-2">画像を生成中...</h3>
+            <p id="status-message" class="text-xs sm:text-sm text-slate-500">しばらくお待ちください（通常60-180秒）</p>
             
             <!-- 複数画像生成用プログレスバー -->
             <div id="multiple-progress" class="hidden mt-4">
@@ -250,23 +254,23 @@
 </main>
 
 <!-- 統計情報（複数枚対応表示） -->
-<div class="max-w-md mx-auto mt-16">
-    <div class="bg-slate-50 rounded-2xl p-6">
-        <div class="grid grid-cols-3 gap-4 text-center">
+<div class="max-w-sm sm:max-w-md mx-auto mt-8 sm:mt-16 px-4">
+    <div class="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
             <div>
-                <div class="text-2xl font-bold text-slate-900" id="today-count">{{ stats.today_generations or 0 }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-slate-900" id="today-count">{{ stats.today_generations or 0 }}</div>
                 <div class="text-xs text-slate-500">今日</div>
             </div>
             <div>
-                <div class="text-2xl font-bold text-slate-900" id="total-count">{{ stats.total_generations or 0 }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-slate-900" id="total-count">{{ stats.total_generations or 0 }}</div>
                 <div class="text-xs text-slate-500">総計</div>
             </div>
             <div>
-                <div class="text-2xl font-bold text-slate-900" id="remaining-count">{{ stats.daily_limit_remaining or 200 }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-slate-900" id="remaining-count">{{ stats.daily_limit_remaining or 200 }}</div>
                 <div class="text-xs text-slate-500">残り</div>
             </div>
         </div>
-        <div class="mt-3 text-center">
+        <div class="mt-2 sm:mt-3 text-center">
             <p class="text-xs text-slate-400">※複数枚生成時は枚数分消費されます</p>
         </div>
     </div>

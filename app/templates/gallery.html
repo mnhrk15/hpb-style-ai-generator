@@ -4,35 +4,35 @@
 
 {% block content %}
 <!-- ヘッダー -->
-<div class="max-w-4xl mx-auto text-center mb-12">
-    <h1 class="text-4xl font-light text-slate-900 mb-4">ギャラリー</h1>
-    <p class="text-lg text-slate-600">これまでに生成されたヘアスタイル</p>
+<div class="max-w-4xl mx-auto text-center mb-8 sm:mb-12">
+    <h1 class="text-2xl sm:text-3xl md:text-4xl font-light text-slate-900 mb-2 sm:mb-4">ギャラリー</h1>
+    <p class="text-base sm:text-lg text-slate-600 px-4">これまでに生成されたヘアスタイル</p>
 </div>
 
 <!-- メインコンテンツ -->
 <div class="max-w-6xl mx-auto">
     
     <!-- 統計情報 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
-            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.total_generations or 0 }}</div>
-            <div class="text-sm text-slate-500">総生成数</div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
+        <div class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900 mb-1 sm:mb-2">{{ stats.total_generations or 0 }}</div>
+            <div class="text-xs sm:text-sm text-slate-500">総生成数</div>
         </div>
-        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
-            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.today_generations or 0 }}</div>
-            <div class="text-sm text-slate-500">今日の生成数</div>
+        <div class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900 mb-1 sm:mb-2">{{ stats.today_generations or 0 }}</div>
+            <div class="text-xs sm:text-sm text-slate-500">今日の生成数</div>
         </div>
-        <div class="bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-100">
-            <div class="text-3xl font-bold text-slate-900 mb-2">{{ stats.daily_limit_remaining or 200 }}</div>
-            <div class="text-sm text-slate-500">残り生成可能数</div>
+        <div class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-sm border border-slate-100">
+            <div class="text-2xl sm:text-3xl font-bold text-slate-900 mb-1 sm:mb-2">{{ stats.daily_limit_remaining or 200 }}</div>
+            <div class="text-xs sm:text-sm text-slate-500">残り生成可能数</div>
         </div>
     </div>
     
     <!-- 画像グリッド -->
     {% if generated_images and generated_images|length > 0 %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-4 sm:px-0">
         {% for image in generated_images %}
-        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+        <div class="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
             <!-- 画像比較 -->
             <div class="grid grid-cols-2 gap-0">
                 <!-- Before -->
@@ -41,12 +41,12 @@
                         <img src="{{ image.uploaded_url }}" alt="変更前" class="w-full h-full object-cover" loading="lazy"
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+画像が見つかりません</dGV4dD48L3N2Zz4='">
                     {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-xs sm:text-sm">
                             画像なし
                         </div>
                     {% endif %}
-                    <div class="absolute top-2 left-2">
-                        <span class="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">変更前</span>
+                    <div class="absolute top-1 sm:top-2 left-1 sm:left-2">
+                        <span class="bg-slate-900 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">変更前</span>
                     </div>
                 </div>
                 
@@ -56,35 +56,35 @@
                         <img src="{{ image.generated_url }}" alt="変更後" class="w-full h-full object-cover" loading="lazy"
                              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+生成中または<L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjNjQ3NDhiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+エラー</dGV4dD48L3N2Zz4='">
                     {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-xs sm:text-sm">
                             生成中...
                         </div>
                     {% endif %}
-                    <div class="absolute top-2 left-2">
-                        <span class="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">変更後</span>
+                    <div class="absolute top-1 sm:top-2 left-1 sm:left-2">
+                        <span class="bg-slate-900 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">変更後</span>
                     </div>
                 </div>
             </div>
             
             <!-- 詳細情報 -->
-            <div class="p-6">
-                <h3 class="font-medium text-slate-900 mb-2">{{ image.original_filename }}</h3>
+            <div class="p-3 sm:p-4 md:p-6">
+                <h3 class="font-medium text-slate-900 mb-1 sm:mb-2 text-sm sm:text-base truncate">{{ image.original_filename }}</h3>
                 {% if image.japanese_prompt %}
-                <p class="text-sm text-slate-600 mb-3 line-clamp-2">{{ image.japanese_prompt }}</p>
+                <p class="text-xs sm:text-sm text-slate-600 mb-2 sm:mb-3 line-clamp-2">{{ image.japanese_prompt }}</p>
                 {% endif %}
                 <div class="flex items-center justify-between text-xs text-slate-400">
-                    <span>{{ image.generated_at.strftime('%Y年%m月%d日 %H:%M') if image.generated_at else '' }}</span>
-                    <div class="flex space-x-2">
+                    <span class="truncate">{{ image.generated_at.strftime('%Y年%m月%d日 %H:%M') if image.generated_at else '' }}</span>
+                    <div class="flex space-x-1 sm:space-x-2 ml-2">
                         {% if image.generated_url %}
                         <button onclick="downloadImage('{{ image.generated_url }}', '{{ image.original_filename }}')" 
                                 class="text-slate-600 hover:text-slate-900 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
                         </button>
                         <button onclick="viewFullsize('{{ image.generated_url }}', '{{ image.original_filename }}')" 
                                 class="text-slate-600 hover:text-slate-900 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                             </svg>
@@ -107,8 +107,8 @@
     
     <!-- ページネーション（必要に応じて） -->
     {% if has_more %}
-    <div class="text-center mt-12">
-        <button id="load-more" class="px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+    <div class="text-center mt-8 sm:mt-12">
+        <button id="load-more" class="px-6 sm:px-8 py-2 sm:py-3 bg-slate-900 text-white rounded-lg sm:rounded-xl hover:bg-slate-800 transition-colors text-sm sm:text-base">
             さらに読み込む
         </button>
     </div>
@@ -116,15 +116,15 @@
     
     {% else %}
     <!-- 空の状態 -->
-    <div class="text-center py-20">
-        <div class="w-20 h-20 mx-auto mb-6 bg-slate-100 rounded-full flex items-center justify-center">
-            <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="text-center py-12 sm:py-20 px-4">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-slate-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
         </div>
-        <h3 class="text-xl font-medium text-slate-900 mb-3">まだ画像がありません</h3>
-        <p class="text-slate-600 mb-8">ヘアスタイルを生成すると、ここに表示されます</p>
-        <a href="{{ url_for('main.index') }}" class="inline-flex items-center px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors">
+        <h3 class="text-lg sm:text-xl font-medium text-slate-900 mb-2 sm:mb-3">まだ画像がありません</h3>
+        <p class="text-sm sm:text-base text-slate-600 mb-6 sm:mb-8">ヘアスタイルを生成すると、ここに表示されます</p>
+        <a href="{{ url_for('main.index') }}" class="inline-flex items-center px-5 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white rounded-lg sm:rounded-xl hover:bg-slate-800 transition-colors text-sm sm:text-base">
             最初の画像を生成する
         </a>
     </div>
@@ -132,11 +132,11 @@
 </div>
 
 <!-- フルスクリーンモーダル -->
-<div id="fullscreen-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-    <div class="relative max-w-4xl max-h-full">
-        <img id="fullscreen-image" class="max-w-full max-h-full object-contain rounded-xl" alt="フルサイズ表示">
-        <button onclick="closeFullscreen()" class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="fullscreen-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="relative w-full h-full sm:max-w-4xl sm:max-h-full flex items-center justify-center">
+        <img id="fullscreen-image" class="max-w-full max-h-full object-contain rounded-lg sm:rounded-xl" alt="フルサイズ表示">
+        <button onclick="closeFullscreen()" class="absolute top-2 sm:top-4 right-2 sm:right-4 text-white hover:text-gray-300 transition-colors">
+            <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
         </button>
