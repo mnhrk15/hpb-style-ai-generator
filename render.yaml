@@ -1,57 +1,68 @@
-# render.yaml
 # このファイルは、Hair Style AI GeneratorをRender上でデプロイするためのインフラ構成を定義します。
-# ドキュメント: https://render.com/docs/blueprint-spec
+# https://render.com/docs/blueprint-spec
 
 services:
-  # Flaskアプリケーションを実行するWebサービス
-  - type: web
-    name: hairstyle-app-web
-    env: python
-    region: oregon # デプロイするリージョン（例: oregon, frankfurt, singapore）
-    plan: standard # インスタンスプラン（無料プランではスリープするため、本番は有料プランを推奨）
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --worker-class eventlet -w 4 run:app"
-    healthCheckPath: /api/health # ヘルスチェック用エンドポイント
+  # 1. Redis: セッションとタスクキューを管理
+  - type: redis
+    name: redis-cache
+    region: oregon # or singapore, frankfurt
+    plan: starter # 無料プランはメモリが少ないため、本番はStarter以上を推奨
+
+  # 2. Celery Worker: 非同期でAI画像生成を実行
+  - type: worker
+    name: hairstyle-app-worker
+    env: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: starter # CPU/メモリを必要とするため有料プラン必須
+    # WorkerはDockerfileのCMDを上書きしてCeleryを起動
+    startCommand: "celery -A run.celery_app worker --loglevel=info --concurrency=2"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION # Dockerfileと合わせる
+        value: 3.12
       - key: REDIS_URL
         fromService:
           type: redis
           name: redis-cache
           property: connectionString
-      # GEMINI_API_KEY, BFL_API_KEY, SECRET_KEYなどは、Renderのダッシュボードで
-      # 'hairstyle-app-secrets' という名前のSecret Groupを作成して管理します。
-      - fromGroup: hairstyle-app-secrets
+      - fromGroup: hairstyle-app-secrets # APIキーなどを外部から注入
+    # 【重要】WorkerもWebと同じディスクをマウントする
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
-        sizeGB: 10 # 必要に応じてサイズを調整
+        sizeGB: 10
       - name: generated-disk
         mountPath: /app/app/static/generated
-        sizeGB: 20 # 必要に応じてサイズを調整
+        sizeGB: 20
 
-  # Celeryタスクを実行するバックグラウンドワーカー
-  - type: worker
-    name: hairstyle-app-worker
-    env: python
+  # 3. Web App: ユーザーからのリクエストを受け付ける
+  - type: web
+    name: hairstyle-app-web
+    env: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
     region: oregon
-    plan: standard
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A run.celery_app worker --loglevel=info --concurrency=2"
+    plan: starter
+    healthCheckPath: /api/health
     envVars:
+      - key: FLASK_ENV
+        value: production
       - key: PYTHON_VERSION
-        value: 3.12.3
+        value: 3.12
       - key: REDIS_URL
         fromService:
           type: redis
           name: redis-cache
           property: connectionString
       - fromGroup: hairstyle-app-secrets
-
-  # Redis互換のマネージドKey-Valueストア
-  - type: redis
-    name: redis-cache
-    region: oregon
-    plan: free # Redisは無料プランから利用可能
-    ipAllowList: [] # 同じRenderアカウント内の全サービスからの接続を許可 
+    # 【重要】Webサービスがファイルを保存・提供するためのディスク
+    disks:
+      - name: uploads-disk
+        mountPath: /app/app/static/uploads
+        sizeGB: 10
+      - name: generated-disk
+        mountPath: /app/app/static/generated
+        sizeGB: 20
