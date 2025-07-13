@@ -1,0 +1,57 @@
+# render.yaml
+# このファイルは、Hair Style AI GeneratorをRender上でデプロイするためのインフラ構成を定義します。
+# ドキュメント: https://render.com/docs/blueprint-spec
+
+services:
+  # Flaskアプリケーションを実行するWebサービス
+  - type: web
+    name: hairstyle-app-web
+    env: python
+    region: oregon # デプロイするリージョン（例: oregon, frankfurt, singapore）
+    plan: standard # インスタンスプラン（無料プランではスリープするため、本番は有料プランを推奨）
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --worker-class eventlet -w 4 run:app"
+    healthCheckPath: /api/health # ヘルスチェック用エンドポイント
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis-cache
+          property: connectionString
+      # GEMINI_API_KEY, BFL_API_KEY, SECRET_KEYなどは、Renderのダッシュボードで
+      # 'hairstyle-app-secrets' という名前のSecret Groupを作成して管理します。
+      - fromGroup: hairstyle-app-secrets
+    disks:
+      - name: uploads-disk
+        mountPath: /app/app/static/uploads
+        sizeGB: 10 # 必要に応じてサイズを調整
+      - name: generated-disk
+        mountPath: /app/app/static/generated
+        sizeGB: 20 # 必要に応じてサイズを調整
+
+  # Celeryタスクを実行するバックグラウンドワーカー
+  - type: worker
+    name: hairstyle-app-worker
+    env: python
+    region: oregon
+    plan: standard
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A run.celery_app worker --loglevel=info --concurrency=2"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis-cache
+          property: connectionString
+      - fromGroup: hairstyle-app-secrets
+
+  # Redis互換のマネージドKey-Valueストア
+  - type: redis
+    name: redis-cache
+    region: oregon
+    plan: free # Redisは無料プランから利用可能
+    ipAllowList: [] # 同じRenderアカウント内の全サービスからの接続を許可 
