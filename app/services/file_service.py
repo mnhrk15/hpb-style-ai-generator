@@ -8,7 +8,7 @@ import uuid
 import hashlib
 import logging
 from datetime import datetime
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 from PIL import Image, ImageOps
 from flask import current_app
 import base64
@@ -287,46 +287,65 @@ class FileService:
             logger.error(f"生成画像保存エラー: {e}")
             return False, None
     
-    def analyze_image_features(self, file_path: str) -> Dict:
+    def analyze_image_features(self, file_path: str) -> Dict[str, Any]:
         """
-        画像特徴分析（簡易版）
-        
+        画像の基本特徴を分析する
+
         Args:
             file_path (str): 画像ファイルパス
-            
+
         Returns:
-            dict: 画像特徴情報
+            Dict: 画像の特徴（幅, 高さ, 形式, サイズ, 向き）
         """
         try:
             with Image.open(file_path) as img:
                 width, height = img.size
-                aspect_ratio = width / height
+                img_format = img.format
+                file_size = os.path.getsize(file_path)
+
+                # EXIFから向き情報を取得
+                exif_data = img.getexif()
+                orientation_val = exif_data.get(0x0112, 1)  # 0x0112はOrientationタグ
+
+                orientation_map = {
+                    1: "Normal", 2: "Flipped horizontally",
+                    3: "Rotated 180°", 4: "Flipped vertically",
+                    5: "Rotated 90° CW and flipped vertically",
+                    6: "Rotated 90° CW",
+                    7: "Rotated 90° CCW and flipped vertically",
+                    8: "Rotated 90° CCW"
+                }
+                orientation_desc = orientation_map.get(orientation_val, "Unknown")
                 
-                # 基本的な特徴抽出
-                features = {
+                # 被写体の向きを簡易的に推定
+                # EXIF情報から「横向き撮影」などが分かる場合がある
+                # より高度な分析にはMLモデルが必要だが、ここではEXIFをヒントにする
+                subject_orientation = "front" # デフォルト
+                if orientation_val in [5, 6, 7, 8]:
+                    subject_orientation = "side or rotated"
+                
+                # アスペクト比から向きを判断
+                aspect_ratio = width / height if height > 0 else 1
+                if aspect_ratio > 1.2:
+                    orientation = "landscape"
+                elif aspect_ratio < 0.8:
+                    orientation = "portrait"
+                else:
+                    orientation = "square"
+
+                return {
                     'width': width,
                     'height': height,
-                    'aspect_ratio': round(aspect_ratio, 2),
-                    'orientation': 'landscape' if width > height else 'portrait' if height > width else 'square',
-                    'resolution': width * height,
-                    'file_size': os.path.getsize(file_path),
-                    'format': img.format,
-                    'mode': img.mode
+                    'format': img_format,
+                    'size_bytes': file_size,
+                    'orientation': orientation,
+                    'exif_orientation_code': orientation_val,
+                    'exif_orientation_desc': orientation_desc,
+                    'subject_orientation_hint': subject_orientation,
                 }
-                
-                # 解像度カテゴリ
-                if features['resolution'] < 500000:  # 0.5MP
-                    features['quality'] = 'low'
-                elif features['resolution'] < 2000000:  # 2MP
-                    features['quality'] = 'medium'
-                else:
-                    features['quality'] = 'high'
-                
-                return features
-                
         except Exception as e:
-            logger.error(f"画像分析エラー: {e}")
-            return {'error': str(e)}
+            logger.error(f"画像特徴分析エラー: {e}")
+            return {}
     
     def _allowed_file(self, filename: str) -> bool:
         """ファイル拡張子確認"""
