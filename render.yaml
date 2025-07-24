@@ -29,7 +29,8 @@ services:
           name: redis-cache
           property: connectionString
     envVarGroups:
-      - hairstyle-app-secrets # APIキーなどを外部から注入
+      - name: hairstyle-app-secrets # APIキーなどを外部から注入
+        sync: false
     # 【重要】WorkerもWebと同じディスクをマウントする
     disks:
       - name: uploads-disk
@@ -59,7 +60,8 @@ services:
           name: redis-cache
           property: connectionString
     envVarGroups:
-      - hairstyle-app-secrets
+      - name: hairstyle-app-secrets
+        sync: false
     # 【重要】Webサービスがファイルを保存・提供するためのディスク
     disks:
       - name: uploads-disk
