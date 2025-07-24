@@ -28,11 +28,8 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
-    # ★修正点: 'fromGroup' を正しい 'envVarGroups' キーに変更しました
     envVarGroups:
       - hairstyle-app-secrets # APIキーなどを外部から注入
-
-    # 【重要】WorkerもWebと同じディスクをマウントする
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
@@ -60,11 +57,8 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
-    # ★修正点: 'fromGroup' を正しい 'envVarGroups' キーに変更しました
     envVarGroups:
       - hairstyle-app-secrets
-
-    # 【重要】Webサービスがファイルを保存・提供するためのディスク
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
