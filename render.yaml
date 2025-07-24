@@ -28,7 +28,7 @@ services:
           name: redis-cache
           property: connectionString
       - fromGroup: hairstyle-app-secrets # APIキーなどを外部から注入
-    persistentDisks:
+    disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
         sizeGB: 10
@@ -56,7 +56,7 @@ services:
           name: redis-cache
           property: connectionString
       - fromGroup: hairstyle-app-secrets
-    persistentDisks:
+    disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
         sizeGB: 10
