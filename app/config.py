@@ -41,7 +41,7 @@ class BaseConfig:
     FLUX_MAX_PARALLEL_GENERATIONS = int(os.getenv('FLUX_MAX_PARALLEL_GENERATIONS', '5'))
 
     # Gemini API設定
-    GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-1.5-flash')
+    GEMINI_MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash')
     
     # Redis設定
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
