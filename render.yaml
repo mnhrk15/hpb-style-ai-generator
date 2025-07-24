@@ -1,5 +1,6 @@
 # このファイルは、Hair Style AI GeneratorをRender上でデプロイするためのインフラ構成を定義します。
 # https://render.com/docs/blueprint-spec
+
 services:
   # 1. Redis: セッションとタスクキューを管理
   - type: redis
@@ -27,7 +28,11 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
-      - fromGroup: hairstyle-app-secrets # APIキーなどを外部から注入
+    # ★修正点: 'fromGroup' を正しい 'envVarGroups' キーに変更しました
+    envVarGroups:
+      - hairstyle-app-secrets # APIキーなどを外部から注入
+
+    # 【重要】WorkerもWebと同じディスクをマウントする
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
@@ -55,7 +60,11 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
-      - fromGroup: hairstyle-app-secrets
+    # ★修正点: 'fromGroup' を正しい 'envVarGroups' キーに変更しました
+    envVarGroups:
+      - hairstyle-app-secrets
+
+    # 【重要】Webサービスがファイルを保存・提供するためのディスク
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
