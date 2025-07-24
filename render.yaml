@@ -16,8 +16,8 @@ services:
     dockerContext: .
     region: oregon
     plan: starter # CPU/メモリを必要とするため有料プラン必須
-    # WorkerはDockerfileのCMDを上書きしてCeleryを起動
     startCommand: "celery -A run.celery_app worker --loglevel=info --concurrency=2"
+    
     envVars:
       - key: FLASK_ENV
         value: production
@@ -28,8 +28,10 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
+          
     envVarGroups:
       - hairstyle-app-secrets # APIキーなどを外部から注入
+      
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
@@ -47,6 +49,7 @@ services:
     region: oregon
     plan: starter
     healthCheckPath: /api/health
+    
     envVars:
       - key: FLASK_ENV
         value: production
@@ -57,8 +60,10 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
+          
     envVarGroups:
       - hairstyle-app-secrets
+      
     disks:
       - name: uploads-disk
         mountPath: /app/app/static/uploads
