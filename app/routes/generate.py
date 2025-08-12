@@ -102,7 +102,8 @@ def generate_hairstyle():
         
         # 同時実行タスク数チェック
         concurrent_tasks = session_service.get_concurrent_tasks_count(user_id)
-        max_concurrent = current_app.config.get('MAX_CONCURRENT_TASKS', 3)
+        # 設定キーを MAX_CONCURRENT_GENERATIONS に統一
+        max_concurrent = current_app.config.get('MAX_CONCURRENT_GENERATIONS', 5)
         
         if concurrent_tasks >= max_concurrent:
             return jsonify({
