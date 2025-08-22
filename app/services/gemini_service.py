@@ -63,13 +63,14 @@ class GeminiService:
             logger.error(f"Geminiクライアント初期化エラー: {e}")
             raise
     
-    def optimize_hair_style_prompt(self, japanese_input: str, image_analysis: Optional[str] = None) -> str:
+    def optimize_hair_style_prompt(self, japanese_input: str, image_analysis: Optional[str] = None, effect_type: str = 'none') -> str:
         """
-        日本語指示をFLUX.1 Kontext最適プロンプトに変換
+        日本語指示をFLUX.1 Kontext最適プロンプトに変換（特定効果対応版）
         
         Args:
             japanese_input (str): 日本語のヘアスタイル変更指示
             image_analysis (str, optional): 画像の特徴分析結果
+            effect_type (str): 追加効果タイプ ('none', 'bright_bg', 'glossy_hair')
             
         Returns:
             str: 最適化された英語プロンプト（512トークン以内）
@@ -82,8 +83,8 @@ class GeminiService:
         """
         if not self.client:
             logger.error("Geminiクライアントが初期化されていません。APIキーが設定されているか確認してください。")
-            return self._generate_fallback_prompt(japanese_input)
-        
+            return self._generate_fallback_prompt(japanese_input, effect_type)
+
         try:
             # システムプロンプト（顔の一貫性を最優先する美容室専用最適化）
             system_prompt = """
@@ -126,8 +127,23 @@ class GeminiService:
 6. 最終的なプロンプトを生成する。
             """.strip()
             
+            # 特定効果に応じたシステムプロンプト拡張を追加
+            effect_instructions = self._get_effect_instructions(effect_type)
+            if effect_instructions:
+                system_prompt += f"\n\n## 特定効果の追加指示\n{effect_instructions}"
+            
             # ユーザープロンプト構築
             image_context = f"\n画像の特徴: {image_analysis}" if image_analysis else ""
+            
+            # ユーザー入力が空の場合の処理
+            if not japanese_input or japanese_input.strip() == "":
+                if effect_type != 'none':
+                    # 効果のみの場合のデフォルト指示
+                    japanese_input = "画像の人物と髪型を、指定された効果で変更してください"
+                else:
+                    # 効果なし＆入力なしの場合はエラー
+                    logger.warning("プロンプト入力と効果選択の両方が空です")
+                    return "Maintain the exact same image with identical facial features, expression, and composition."
             
             full_prompt = f"""
 {system_prompt}
@@ -153,24 +169,29 @@ class GeminiService:
             
             optimized_prompt = response.text.strip()
             
+            # 効果固有のプロンプト拡張を後付け
+            if effect_type != 'none':
+                optimized_prompt = self._apply_effect_to_prompt(optimized_prompt, effect_type)
+            
             # 512トークン制限確認（概算）
             if len(optimized_prompt.split()) > 450:  # 安全マージン
                 optimized_prompt = ' '.join(optimized_prompt.split()[:450])
                 logger.warning("プロンプトを512トークン制限内に調整しました")
             
-            logger.info(f"プロンプト最適化成功: {len(optimized_prompt.split())} words")
+            logger.info(f"プロンプト最適化成功 (効果: {effect_type}): {len(optimized_prompt.split())} words")
             return optimized_prompt
             
         except Exception as e:
             logger.error(f"Geminiプロンプト最適化エラー: {e}")
-            return self._generate_fallback_prompt(japanese_input)
+            return self._generate_fallback_prompt(japanese_input, effect_type)
     
-    def _generate_fallback_prompt(self, japanese_input: str) -> str:
+    def _generate_fallback_prompt(self, japanese_input: str, effect_type: str = 'none') -> str:
         """
-        Gemini利用不可時のフォールバックプロンプト生成
+        Gemini利用不可時のフォールバックプロンプト生成（特定効果対応版）
         
         Args:
             japanese_input (str): 日本語入力
+            effect_type (str): 追加効果タイプ
             
         Returns:
             str: 基本的な英語プロンプト
@@ -201,8 +222,63 @@ class GeminiService:
         else:
             fallback_prompt = "Transform the hairstyle while maintaining identical facial features, expression, and composition. Keep the same lighting and background."
         
-        logger.info("フォールバックプロンプトを生成しました")
+        # 特定効果を適用
+        if effect_type != 'none':
+            fallback_prompt = self._apply_effect_to_prompt(fallback_prompt, effect_type)
+        
+        logger.info(f"フォールバックプロンプトを生成しました (効果: {effect_type})")
         return fallback_prompt
+
+    def _get_effect_instructions(self, effect_type: str) -> str:
+        """
+        特定効果のシステムプロンプト指示を取得
+        
+        Args:
+            effect_type (str): 効果タイプ ('bright_bg', 'glossy_hair', 'none')
+            
+        Returns:
+            str: 効果固有の指示文
+        """
+        effect_instructions = {
+            'bright_bg': """
+**明るいシンプル背景効果**: 
+- 元の画像の人物、服装、髪型、表情は**一切変更せず**、背景のみを明るくシンプルなスタジオ背景に差し替える
+- 背景は均一に照明されたクリーンな白いコンクリート壁や、ソフトなテクスチャの白い壁面が推奨
+- 人物への照明は自然で柔らかな明るい拡散光とし、影は最小限に抑える
+- **重要**: 人物の顔、肌、髪、髪型、表情、身体のポーズ、構図は100%同一に保つ
+            """,
+            'glossy_hair': """
+**髪のツヤ感向上効果**:
+- 元の画像の人物、背景、髪型、髪の長さ、髪色は**一切変更せず**、髪の質感のみを向上させる
+- 髪に健康的で自然な光沢とツヤを追加し、滑らかで輝く仕上がりにする
+- 毛流れや髪のボリューム感は元画像と同一に保つ
+- 過度に人工的でない、自然で上品な輝きを演出する
+- **重要**: 顔、表情、背景、服装、全体の構図は100%変更しない
+            """
+        }
+        
+        return effect_instructions.get(effect_type, "")
+    
+    def _apply_effect_to_prompt(self, base_prompt: str, effect_type: str) -> str:
+        """
+        基本プロンプトに特定効果の指示を適用
+        
+        Args:
+            base_prompt (str): 基本プロンプト
+            effect_type (str): 効果タイプ
+            
+        Returns:
+            str: 効果適用済みプロンプト
+        """
+        effect_prompts = {
+            'bright_bg': " Replace only the background with a softly textured white concrete wall. The wall should be evenly lit by bright, diffuse natural daylight with no visible shadows. Do not modify the subject in any way — the face, skin, hair, hairstyle, expression, lighting, and composition must remain 100% unchanged. Only the background should be affected.",
+            'glossy_hair': " Enhance only the hair texture to add healthy, natural shine and glossiness while keeping the exact same hairstyle, length, and color. The hair should have a smooth, lustrous finish with natural light reflection. Do not change the face, expression, background, clothing, or overall composition in any way."
+        }
+        
+        effect_addition = effect_prompts.get(effect_type, "")
+        if effect_addition:
+            return base_prompt + effect_addition
+        return base_prompt
     
     def create_hairstyle_prompt(self, change_type: str, **kwargs) -> Optional[str]:
         """

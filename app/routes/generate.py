@@ -64,12 +64,20 @@ def generate_hairstyle():
         task_id_from_client = data.get('task_id') # フロントエンドから指定
         mode = data.get('mode', 'kontext')
         mask_data = data.get('mask_data')
+        effect_type = data.get('effect_type', 'none')  # 追加効果タイプ
         
-        # 必須パラメータ確認
-        if not all([file_path, japanese_prompt, original_filename, task_id_from_client]):
+        # 必須パラメータ確認（効果選択時はプロンプト任意）
+        if not all([file_path, original_filename, task_id_from_client]):
             return jsonify({
                 'success': False,
                 'error': '必須パラメータが不足しています'
+            }), 400
+        
+        # プロンプト要件の確認（効果なし時は必須）
+        if effect_type == 'none' and (not japanese_prompt or not japanese_prompt.strip()):
+            return jsonify({
+                'success': False,
+                'error': 'プロンプトを入力するか、追加効果を選択してください'
             }), 400
         
         # 生成枚数バリデーション
@@ -117,24 +125,26 @@ def generate_hairstyle():
             task_id = task_service.generate_hairstyle_async(
                 user_id=user_id,
                 file_path=file_path,
-                japanese_prompt=japanese_prompt,
+                japanese_prompt=japanese_prompt or "",  # 効果選択時は空文字も許可
                 original_filename=original_filename,
                 task_id=task_id_from_client,
                 mode=mode,
-                mask_data=mask_data
+                mask_data=mask_data,
+                effect_type=effect_type
             )
         else:
             # 新しい複数生成
             task_id = task_service.generate_multiple_hairstyles_async(
                 user_id=user_id,
                 file_path=file_path,
-                japanese_prompt=japanese_prompt,
+                japanese_prompt=japanese_prompt or "",  # 効果選択時は空文字も許可
                 original_filename=original_filename,
                 count=count,
                 base_seed=base_seed,
                 task_id=task_id_from_client,
                 mode=mode,
-                mask_data=mask_data
+                mask_data=mask_data,
+                effect_type=effect_type
             )
         
         logger.info(f"ヘアスタイル生成開始: {user_id} - {task_id} ({count}枚)")

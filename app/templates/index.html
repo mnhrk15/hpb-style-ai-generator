@@ -115,14 +115,58 @@
                     rows="3"
                     placeholder="例：ショートボブに変更して、髪色を茶色にしてください"
                     maxlength="300"
-                    required
                 ></textarea>
                 <div class="flex justify-between items-center mt-2">
-                    <span class="text-xs text-slate-400">自然な日本語で詳しく説明してください</span>
+                    <span class="text-xs text-slate-400" id="prompt-hint">「追加効果」を選択するとプロンプト入力は任意になります</span>
                     <span id="char-count" class="text-xs text-slate-400">0/300</span>
                 </div>
             </div>
             
+            <!-- 追加効果選択 -->
+            <div class="mb-6 sm:mb-8">
+                <label class="block text-sm font-medium text-slate-700 mb-2 sm:mb-3">
+                    追加効果
+                </label>
+                <div class="flex flex-col space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="effect_type" value="none" class="sr-only effect-radio" checked>
+                        <div class="effect-radio-button w-full p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 border-2 border-slate-300 rounded-full mr-3 radio-circle"></div>
+                                <div>
+                                    <div class="text-sm font-medium text-slate-900">効果なし</div>
+                                    <div class="text-xs text-slate-500">プロンプト入力が必要</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="effect_type" value="bright_bg" class="sr-only effect-radio">
+                        <div class="effect-radio-button w-full p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 border-2 border-slate-300 rounded-full mr-3 radio-circle"></div>
+                                <div>
+                                    <div class="text-sm font-medium text-slate-900">レディース: 明るいシンプル背景</div>
+                                    <div class="text-xs text-slate-500">背景を明るくクリーンなスタジオ背景に変更</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="effect_type" value="glossy_hair" class="sr-only effect-radio">
+                        <div class="effect-radio-button w-full p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 border-2 border-slate-300 rounded-full mr-3 radio-circle"></div>
+                                <div>
+                                    <div class="text-sm font-medium text-slate-900">メンズ: 髪にツヤ感を追加</div>
+                                    <div class="text-xs text-slate-500">髪に健康的で自然なツヤと光沢を追加</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <!-- クイック選択 -->
             <div class="mb-6 sm:mb-8">
                 <p class="text-sm text-slate-500 mb-2 sm:mb-3">よく使われるスタイル：</p>
@@ -222,9 +266,41 @@
             <button id="download-btn" class="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white rounded-lg sm:rounded-xl hover:bg-slate-800 transition-colors text-sm sm:text-base">
                 ダウンロード
             </button>
+
             <button id="new-generation-btn" class="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-slate-100 text-slate-700 rounded-lg sm:rounded-xl hover:bg-slate-200 transition-colors text-sm sm:text-base">
                 新しい生成
             </button>
+        </div>
+    </div>
+    
+    <!-- 画像調整セクション -->
+    <div id="image-adjustment-section" class="hidden bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8 mb-6">
+        <h3 class="text-lg sm:text-xl font-medium text-slate-900 mb-4 sm:mb-6 text-center">画像調整</h3>
+        <div class="bg-slate-50 rounded-lg p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <div class="flex-grow">
+                    <label for="brightness-slider" class="block text-xs text-slate-600 mb-2">明るさ</label>
+                    <input type="range" 
+                           id="brightness-slider" 
+                           min="50" 
+                           max="200" 
+                           value="100" 
+                           class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider">
+                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>暗い (50%)</span>
+                        <span>標準 (100%)</span>
+                        <span>明るい (200%)</span>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 flex gap-2">
+                    <button id="reset-brightness-btn" class="px-3 py-2 text-xs bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors">
+                        リセット
+                    </button>
+                    <button id="download-adjusted-btn" class="px-3 py-2 text-xs bg-slate-600 text-white rounded-md hover:bg-slate-700 transition-colors hidden">
+                        調整済み画像をダウンロード
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -329,6 +405,62 @@
     
     .generated-image-item:hover .image-overlay {
         opacity: 1;
+    }
+    
+    /* 追加効果選択のスタイル */
+    .effect-radio-button {
+        transition: all 0.2s ease;
+    }
+    
+    .effect-radio:checked + .effect-radio-button {
+        background-color: #f8fafc;
+        border-color: #0f172a;
+    }
+    
+    .effect-radio:checked + .effect-radio-button .radio-circle {
+        border-color: #0f172a;
+        background-color: #0f172a;
+        position: relative;
+    }
+    
+    .effect-radio:checked + .effect-radio-button .radio-circle::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 6px;
+        height: 6px;
+        background-color: white;
+        border-radius: 50%;
+    }
+    
+    /* 明るさスライダーのスタイル */
+    .slider {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #0f172a;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .slider::-moz-range-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #0f172a;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 </style>
 {% endblock %}

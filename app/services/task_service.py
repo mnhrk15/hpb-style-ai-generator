@@ -52,9 +52,10 @@ class TaskService:
                                japanese_prompt: str, original_filename: str,
                                task_id: Optional[str] = None,
                                mode: str = 'kontext',
-                               mask_data: str = None) -> str:
+                               mask_data: str = None,
+                               effect_type: str = 'none') -> str:
         """
-        非同期ヘアスタイル生成タスクの開始
+        非同期ヘアスタイル生成タスクの開始（特定効果対応版）
         
         Args:
             user_id (str): ユーザーID
@@ -62,32 +63,36 @@ class TaskService:
             japanese_prompt (str): 日本語プロンプト
             original_filename (str): 元ファイル名
             task_id (str, optional): フロントエンドで生成されたタスクID
+            mode (str): 生成モード ('kontext' or 'fill')
+            mask_data (str): マスクデータ（fill時）
+            effect_type (str): 追加効果タイプ ('none', 'bright_bg', 'glossy_hair')
             
         Returns:
             str: タスクID
         """
         if not self.celery_app:
             # Celery利用不可の場合は同期実行
-            return self._generate_hairstyle_sync(user_id, file_path, japanese_prompt, original_filename, task_id)
-        
+            return self._generate_hairstyle_sync(user_id, file_path, japanese_prompt, original_filename, task_id, effect_type)
+
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_hairstyle_task',
-            args=[user_id, file_path, japanese_prompt, original_filename, mode, mask_data],
+            args=[user_id, file_path, japanese_prompt, original_filename, mode, mask_data, effect_type],
             task_id=task_id
         )
-        
+
         # セッションにタスク追加
         task_info = {
             "task_id": task.id,
             "type": "hairstyle_generation",
             "japanese_prompt": japanese_prompt,
             "original_filename": original_filename,
+            "effect_type": effect_type,
             "status": "queued"
         }
         self.session_service.add_active_task(user_id, task_info)
-        
-        logger.info(f"非同期ヘアスタイル生成タスク開始: {task.id}")
+
+        logger.info(f"非同期ヘアスタイル生成タスク開始: {task.id} (効果: {effect_type})")
         return task.id
     
     def generate_multiple_hairstyles_async(self, user_id: str, file_path: str, 
@@ -95,9 +100,10 @@ class TaskService:
                                          count: int = 1, base_seed: Optional[int] = None,
                                          task_id: Optional[str] = None,
                                          mode: str = 'kontext',
-                                         mask_data: str = None) -> str:
+                                         mask_data: str = None,
+                                         effect_type: str = 'none') -> str:
         """
-        複数画像非同期ヘアスタイル生成タスクの開始
+        複数画像非同期ヘアスタイル生成タスクの開始（特定効果対応版）
         
         Args:
             user_id (str): ユーザーID
@@ -107,6 +113,9 @@ class TaskService:
             count (int): 生成枚数（1~5枚）
             base_seed (int, optional): ベースシード値
             task_id (str, optional): フロントエンドで生成されたタスクID
+            mode (str): 生成モード ('kontext' or 'fill')
+            mask_data (str): マスクデータ（fill時）
+            effect_type (str): 追加効果タイプ ('none', 'bright_bg', 'glossy_hair')
             
         Returns:
             str: メインタスクID
@@ -118,13 +127,13 @@ class TaskService:
             # Celery利用不可の場合は同期実行
             return self._generate_multiple_hairstyles_sync(
                 user_id, file_path, japanese_prompt, original_filename, 
-                task_id=task_id, count=count, base_seed=base_seed
+                task_id=task_id, count=count, base_seed=base_seed, effect_type=effect_type
             )
         
         # 非同期タスク開始
         task = self.celery_app.send_task(
             'app.services.task_service.generate_multiple_hairstyles_task',
-            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed, mode, mask_data],
+            args=[user_id, file_path, japanese_prompt, original_filename, count, base_seed, mode, mask_data, effect_type],
             task_id=task_id
         )
         
@@ -136,32 +145,34 @@ class TaskService:
             "original_filename": original_filename,
             "count": count,
             "base_seed": base_seed,
+            "effect_type": effect_type,
             "status": "queued"
         }
         self.session_service.add_active_task(user_id, task_info)
         
-        logger.info(f"複数画像非同期ヘアスタイル生成タスク開始: {task.id} ({count}枚)")
+        logger.info(f"複数画像非同期ヘアスタイル生成タスク開始: {task.id} ({count}枚, 効果: {effect_type})")
         return task.id
 
-    def _prepare_generation_assets(self, file_path: str, japanese_prompt: str):
+    def _prepare_generation_assets(self, file_path: str, japanese_prompt: str, effect_type: str = 'none'):
         """
-        画像特徴分析・プロンプト最適化・Base64エンコードをまとめて実行
+        画像特徴分析・プロンプト最適化・Base64エンコードをまとめて実行（特定効果対応版）
         Args:
             file_path (str): 画像ファイルパス
             japanese_prompt (str): 日本語プロンプト
+            effect_type (str): 追加効果タイプ
         Returns:
             tuple: (optimized_prompt, image_base64)
         """
         image_features = self.file_service.analyze_image_features(file_path)
         image_analysis = f"解像度: {image_features.get('width')}x{image_features.get('height')}, 向き: {image_features.get('orientation')}"
-        optimized_prompt = self.gemini_service.optimize_hair_style_prompt(japanese_prompt, image_analysis)
+        optimized_prompt = self.gemini_service.optimize_hair_style_prompt(japanese_prompt, image_analysis, effect_type=effect_type)
         image_base64 = self.file_service.convert_to_base64(file_path, max_size=2048)
         return optimized_prompt, image_base64
 
     def _execute_single_generation(self, user_id: str, file_path: str,
                                    japanese_prompt: str, original_filename: str, task_id: str,
-                                   mode: str = 'kontext', mask_data: str = None):
-        """単一画像生成のコアロジック"""
+                                   mode: str = 'kontext', mask_data: str = None, effect_type: str = 'none'):
+        """単一画像生成のコアロジック（特定効果対応版）"""
         emit_progress = lambda data: self._emit_progress(user_id, data)
 
         emit_progress({
@@ -171,7 +182,7 @@ class TaskService:
             'message': 'プロンプトを最適化しています...'
         })
         
-        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt)
+        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt, effect_type=effect_type)
         
         emit_progress({
             'task_id': task_id,
@@ -219,7 +230,8 @@ class TaskService:
                 "uploaded_path": file_path,
                 "generated_path": saved_path,
                 "japanese_prompt": japanese_prompt,
-                "optimized_prompt": optimized_prompt
+                "optimized_prompt": optimized_prompt,
+                "effect_type": effect_type
             }
             self.session_service.add_generated_image(user_id, generation_info)
             
@@ -324,18 +336,19 @@ class TaskService:
         return {'success': True, 'count': count, 'success_count': success_count, 'generated_images': successful_images}
 
     def _generate_hairstyle_sync(self, user_id: str, file_path: str,
-                               japanese_prompt: str, original_filename: str, task_id: str) -> str:
-        """同期ヘアスタイル生成（Celery利用不可時）"""
+                               japanese_prompt: str, original_filename: str, task_id: str, effect_type: str = 'none') -> str:
+        """同期ヘアスタイル生成（Celery利用不可時、特定効果対応版）"""
         try:
             # アクティブタスク追加
             task_info = {
                 "task_id": task_id, "type": "hairstyle_generation_sync",
-                "japanese_prompt": japanese_prompt, "original_filename": original_filename, "status": "processing"
+                "japanese_prompt": japanese_prompt, "original_filename": original_filename, 
+                "effect_type": effect_type, "status": "processing"
             }
             self.session_service.add_active_task(user_id, task_info)
             
             # コアロジック実行
-            self._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id)
+            self._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id, effect_type=effect_type)
 
         except Exception as e:
             logger.error(f"同期生成エラー: {e}")
