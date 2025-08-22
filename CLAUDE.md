@@ -58,6 +58,12 @@ pytest --cov=app --cov-report=html
 # Run specific test module
 pytest tests/test_services/
 
+# Run single test file
+pytest tests/test_services/test_flux_service.py
+
+# Run specific test function
+pytest tests/test_services/test_flux_service.py::test_generate_hair_style
+
 # Load testing
 locust -f tests/test_load/locustfile.py
 ```
@@ -158,6 +164,13 @@ locust -f tests/test_load/locustfile.py
 - Per-endpoint limits defined in route decorators
 - Redis-backed storage for distributed rate limiting
 
+**Code Quality Requirements**:
+- Follow PEP 8 style guidelines  
+- Add Japanese docstrings for user-facing functions
+- Include type hints where applicable
+- Always run `pytest` before completing tasks
+- Test both with and without Redis connectivity
+
 ## Security Considerations
 
 **CSRF Protection**: Enabled for form submissions, exempted for API endpoints
@@ -178,3 +191,22 @@ locust -f tests/test_load/locustfile.py
 **Docker Support**: Full docker-compose setup for production deployment
 **Health Checks**: `/api/health` endpoint for monitoring
 **Logging**: Configurable log levels, file + console output
+
+## Debugging and Troubleshooting
+
+**Service Dependencies**:
+- Redis must be running before starting the application
+- Celery worker required for image generation functionality
+- API keys must be valid and configured in `.env`
+
+**Common Issues**:
+- Redis connection failures: Check `redis-server` is running
+- SocketIO not working: Use `python dev-start.py` instead of `python run.py`
+- Image generation stuck: Verify Celery worker is active with `celery -A run.celery_app inspect ping`
+- API errors: Check API key validity and rate limits
+
+**Development Workflow**:
+1. Start Redis: `redis-server`
+2. Start Celery worker: `celery -A run.celery_app worker --loglevel=info`
+3. Start application: `python dev-start.py`
+4. Run tests after changes: `pytest`

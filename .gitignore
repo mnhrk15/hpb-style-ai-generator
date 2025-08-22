@@ -346,4 +346,7 @@ coverage/
 # サンプル設定ファイルは保持
 !.env.example
 !docker-compose.example.yml
-!nginx.example.conf 
+!nginx.example.conf w
+
+# MCP
+.serena/
