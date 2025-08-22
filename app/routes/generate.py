@@ -4,7 +4,7 @@ Hair Style AI Generator - Generate Routes
 """
 
 from flask import Blueprint, request, jsonify, session, current_app
-from app import limiter, socketio
+from app import socketio
 from app.services.task_service import TaskService
 from app.services.session_service import SessionService
 from app.services.file_service import FileService
@@ -23,7 +23,6 @@ file_service = FileService()
 
 
 @generate_bp.route('/', methods=['POST'])
-@limiter.limit("10 per hour")  # 生成制限
 @session_required
 def generate_hairstyle():
     """
@@ -176,7 +175,6 @@ def generate_hairstyle():
 
 
 @generate_bp.route('/status/<task_id>', methods=['GET'])
-@limiter.limit("100 per hour")
 @session_required
 def get_generation_status(task_id):
     """
@@ -208,7 +206,6 @@ def get_generation_status(task_id):
 
 
 @generate_bp.route('/cancel/<task_id>', methods=['POST'])
-@limiter.limit("20 per hour")
 @session_required
 def cancel_generation(task_id):
     """
@@ -246,7 +243,6 @@ def cancel_generation(task_id):
 
 
 @generate_bp.route('/history', methods=['GET'])
-@limiter.limit("100 per hour")
 @session_required
 def generation_history():
     """

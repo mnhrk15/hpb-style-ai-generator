@@ -3,7 +3,6 @@
 Flask==3.0.3
 Flask-SocketIO==5.3.6
 Flask-WTF==1.2.1
-Flask-Limiter==3.5.0
 
 # 非同期処理・タスクキュー
 Celery==5.3.6

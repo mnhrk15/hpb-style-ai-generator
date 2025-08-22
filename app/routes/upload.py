@@ -5,7 +5,6 @@ Hair Style AI Generator - Upload Routes
 
 from flask import Blueprint, request, jsonify, session, current_app
 from werkzeug.utils import secure_filename
-from app import limiter
 from app.services.file_service import FileService
 from app.services.session_service import SessionService
 from app.utils.decorators import session_required
@@ -19,7 +18,6 @@ session_service = SessionService()
 
 
 @upload_bp.route('/', methods=['POST'])
-@limiter.limit("20 per hour")  # アップロード制限
 @session_required
 def upload_file():
     """
@@ -113,7 +111,6 @@ def upload_file():
 
 
 @upload_bp.route('/validate', methods=['POST'])
-@limiter.limit("50 per hour")
 def validate_file():
     """
     アップロード前のファイルバリデーション
@@ -148,7 +145,6 @@ def validate_file():
 
 
 @upload_bp.route('/history', methods=['GET'])
-@limiter.limit("100 per hour")
 @session_required
 def upload_history():
     """
