@@ -481,13 +481,23 @@ class FluxService:
                 continue
             
             try:
-                # ファイル名生成
-                name_parts = original_filename.rsplit('.', 1)
-                if len(name_parts) == 2:
-                    name, ext = name_parts
-                    filename = f"{prefix}_{user_id}_{name}_{result['index']}.{ext}"
-                else:
-                    filename = f"{prefix}_{user_id}_{original_filename}_{result['index']}.jpg"
+                # ファイル名生成（統一パターン）
+                from datetime import datetime
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                # ファイル名サニタイズ
+                name = original_filename.rsplit('.', 1)[0] if '.' in original_filename else original_filename
+                safe_chars = []
+                for char in name:
+                    if char.isalnum() or char in '-_':
+                        safe_chars.append(char)
+                    else:
+                        safe_chars.append('_')
+                safe_name = ''.join(safe_chars)
+                if len(safe_name) > 50:
+                    safe_name = safe_name[:50]
+                safe_name = safe_name or 'image'
+                
+                filename = f"{user_id}_{timestamp}_{safe_name}_{result['index']}.jpg"
                 
                 # 保存パス
                 generated_folder = current_app.config.get('GENERATED_FOLDER', 'app/static/generated')

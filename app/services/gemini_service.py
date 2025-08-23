@@ -227,7 +227,8 @@ Rules:
         """
         effect_prompts = {
             'bright_bg': " Replace only the background with a softly textured white concrete wall. The wall should be evenly lit by bright, diffuse natural daylight with no visible shadows.",
-            'glossy_hair': " Add gel-like natural shine to the hair only; do not change the hairstyle or hair length or color. Keep the face, background, lighting, and overall composition unchanged."
+            'glossy_hair': " Enhance the hair with high-gloss gel styling effect while maintaining the exact same facial features and hairstyle shape. Add glossy, wet-look finish to the hair strands with strong light reflections and mirror-like shine, as if professional styling gel or pomade has been applied. Keep all hair textures smooth and sleek with visible light catchments on hair surface. Maintain natural hair color and preserve the original hair length and cut style completely unchanged.",
+            'back_style': " Generate a back view portrait of the same person maintaining identical hairstyle, hair color, hair length, and all personal characteristics. Show the rear perspective of the haircut with the same styling, texture, and professional finish. Keep consistent lighting conditions and salon environment. Preserve the hair's layering, graduation, and styling details visible from behind. Maintain the same clothing and overall composition quality."
         }
         
         effect_addition = effect_prompts.get(effect_type, "")
