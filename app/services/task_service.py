@@ -528,13 +528,14 @@ def register_celery_tasks(celery_app: Celery):
     def generate_hairstyle_task(self, user_id: str, file_path: str, 
                               japanese_prompt: str, original_filename: str,
                               mode: str = 'kontext',
-                              mask_data: str = None):
+                              mask_data: str = None,
+                              effect_type: str = 'none'):
         """非同期ヘアスタイル生成タスク（Celery用）"""
         task_id = self.request.id
         task_service = TaskService(celery_app) # サービスインスタンス作成
         
         try:
-            return task_service._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id, mode, mask_data)
+            return task_service._execute_single_generation(user_id, file_path, japanese_prompt, original_filename, task_id, mode, mask_data, effect_type)
         except Exception as e:
             logger.error(f"Celeryタスクエラー: {e}")
             task_service._emit_progress(user_id, {
