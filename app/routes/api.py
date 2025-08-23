@@ -4,7 +4,6 @@ REST API・システム情報・統計・管理機能
 """
 
 from flask import Blueprint, jsonify, request, session, current_app
-from app import limiter
 from app.services.session_service import SessionService
 from app.services.gemini_service import GeminiService
 from app.services.flux_service import FluxService
@@ -25,7 +24,6 @@ file_service = FileService()
 
 
 @api_bp.route('/scrape-image', methods=['POST'])
-@limiter.limit("20 per hour")
 @session_required
 def scrape_image_from_url():
     """
@@ -139,7 +137,6 @@ def health_check():
 
 
 @api_bp.route('/info', methods=['GET'])
-@limiter.limit("50 per hour")
 def system_info():
     """
     システム情報取得
@@ -177,7 +174,6 @@ def system_info():
 
 
 @api_bp.route('/stats', methods=['GET'])
-@limiter.limit("20 per hour")
 @session_required
 def system_stats():
     """
@@ -222,7 +218,6 @@ def system_stats():
 
 
 @api_bp.route('/session', methods=['GET'])
-@limiter.limit("100 per hour")
 @session_required
 def get_session_info():
     """
@@ -264,7 +259,6 @@ def get_session_info():
 
 
 @api_bp.route('/session', methods=['POST'])
-@limiter.limit("10 per hour")
 def create_new_session():
     """
     新しいセッション作成
@@ -303,7 +297,6 @@ def create_new_session():
 
 
 @api_bp.route('/session', methods=['DELETE'])
-@limiter.limit("10 per hour")
 def clear_session():
     """
     セッションクリア
@@ -328,7 +321,6 @@ def clear_session():
 
 
 @api_bp.route('/test/gemini', methods=['POST'])
-@limiter.limit("5 per hour")
 def test_gemini_api():
     """
     Gemini API接続テスト
@@ -373,7 +365,6 @@ def test_gemini_api():
 
 
 @api_bp.route('/test/flux', methods=['POST'])
-@limiter.limit("2 per hour")
 def test_flux_api():
     """
     FLUX.1 API接続テスト（実際の生成は行わない）
@@ -411,7 +402,6 @@ def test_flux_api():
 
 
 @api_bp.route('/gallery/<string:image_id>', methods=['DELETE'])
-@limiter.limit("20 per hour")
 @session_required
 def delete_gallery_image(image_id):
     """
@@ -505,7 +495,6 @@ def delete_gallery_image(image_id):
 
 
 @api_bp.route('/gallery/search', methods=['GET'])
-@limiter.limit("30 per hour")
 @session_required
 def search_gallery():
     """
@@ -579,7 +568,6 @@ def search_gallery():
 
 
 @api_bp.route('/session/init', methods=['POST'])
-@limiter.limit("30 per hour")
 def init_session():
     """
     セッション初期化エンドポイント

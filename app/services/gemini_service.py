@@ -5,7 +5,7 @@ Gemini 2.5 Flashによる美容室専用プロンプト最適化
 
 import os
 import logging
-from typing import Dict, Optional
+from typing import Optional
 from flask import current_app
 
 try:
@@ -86,51 +86,16 @@ class GeminiService:
             return self._generate_fallback_prompt(japanese_input, effect_type)
 
         try:
-            # システムプロンプト（顔の一貫性を最優先する美容室専用最適化）
+            # システムプロンプト（簡潔・一貫性重視）
             system_prompt = """
-あなたは、AI画像生成モデル「FLUX.1 Kontext」向けのプロンプトを生成する、世界トップクラスのプロンプトエンジニアです。
-特に、人物写真（特に顔）の一貫性を維持したまま、髪型や服装などを変更するプロンプトの生成に特化しています。
+You write concise English prompts for FLUX.1 Kontext from Japanese instructions.
 
-あなたの最重要タスクは、日本語の指示内容に基づき、元の画像の人物と「完全に同一の人物」に見える画像を生成できる、高品質な英語プロンプトを作成することです。
-
-## 厳守すべきルール
-
-### 1. **顔の一貫性維持が最優先事項**
-- **最重要指示**: `maintain the exact same facial features, identity, and expression` のような、顔の完全な一貫性を強制するフレーズを**必ず**プロンプトに含めてください。
-- **変更禁止項目**: 元画像の人物の**人種、顔の輪郭、目、鼻、口の形と配置、肌の色合い、年齢感**は**一切変更してはなりません**。
-- **具体例**: `A photo of the same woman...` のように、同一人物であることを明確に指示してください。
-
-### 2. **ヘアスタイルとその他の変更点**
-- 日本語の指示に沿って、髪型、髪色、髪の長さなどの変更点を具体的に記述してください。
-- `Change the hairstyle to a short bob cut` や `Change the hair color to a warm brown` のように、具体的で明確な指示を出してください。
-
-### 3. **品質と構成の維持**
-- `photorealistic, high detail, sharp focus` のような、写真品質を高く保つためのキーワードを追加してください。
-- 背景、照明、カメラアングル、構図も、指示がない限りは元画像と同一に保つように `keep the same lighting and background` のように指示してください。
-- **顔と体の向き**: 元画像の向き（正面、横顔、後ろ姿など）を完全に維持してください。`maintain the same head and body orientation` や `preserve the original viewing angle (e.g., side view, back view)` のようなフレーズを使用してください。
-
-### 4. **プロンプトのフォーマット**
-- 出力は英語のプロンプトのみ。説明や前置きは不要です。
-- 簡潔かつ効果的な文章で構成してください。
-
-## 画像コンテキストの分析
-- ユーザーから提供される「画像の特徴」には、画像の向きに関する重要なヒント（`exif_orientation_desc`や`subject_orientation_hint`）が含まれています。
-- この情報を最優先で考慮し、プロンプトが画像の物理的な向きや構図と一致するようにしてください。
-- 例えば、`subject_orientation_hint`が`side or rotated`の場合、生成されるプロンプトは横顔や特定の角度からの視点を維持することを絶対に強制する必要があります。
-
-## 思考プロセス
-1. **画像コンテキストの確認**: まず提供された「画像の特徴」を分析し、特に`exif_orientation_desc`と`subject_orientation_hint`から、画像の向き（正面、横顔、後ろ姿、回転など）を正確に把握する。
-2. 日本語の指示から、ヘアスタイルに関する変更点を正確に抽出する。
-3. 「顔の一貫性維持」と「画像の向きの維持」を最優先事項として、それを実現するための強力な英語表現をプロンプトの中心に据える。
-4. ヘアスタイルの変更点を具体的に記述する。
-5. 全体の品質を維持するための指示を追加する。
-6. 最終的なプロンプトを生成する。
+Rules:
+- Always preserve identity: include "maintain the exact same facial features, identity, and expression".
+- Preserve the same head and body orientation and camera angle (use image context if provided).
+- Keep the same lighting and background unless an effect is explicitly requested.
+- Output: one short English sentence (about 35–45 words). No explanations, no lists, no extra text.
             """.strip()
-            
-            # 特定効果に応じたシステムプロンプト拡張を追加
-            effect_instructions = self._get_effect_instructions(effect_type)
-            if effect_instructions:
-                system_prompt += f"\n\n## 特定効果の追加指示\n{effect_instructions}"
             
             # ユーザープロンプト構築
             image_context = f"\n画像の特徴: {image_analysis}" if image_analysis else ""
@@ -138,8 +103,15 @@ class GeminiService:
             # ユーザー入力が空の場合の処理
             if not japanese_input or japanese_input.strip() == "":
                 if effect_type != 'none':
-                    # 効果のみの場合のデフォルト指示
-                    japanese_input = "画像の人物と髪型を、指定された効果で変更してください"
+                    # 効果のみ指定時はGeminiをスキップし、最小プロンプトを返す
+                    base_prompt = (
+                        "Maintain the exact same facial features, identity, and expression. "
+                        "Keep the same head and body orientation and camera angle. "
+                    )
+                    optimized_prompt = self._apply_effect_to_prompt(base_prompt, effect_type)
+                    optimized_prompt = self._ensure_orientation_lock(optimized_prompt)
+                    logger.info("効果のみ指定のため、Geminiをスキップして最小プロンプトを返却しました")
+                    return optimized_prompt
                 else:
                     # 効果なし＆入力なしの場合はエラー
                     logger.warning("プロンプト入力と効果選択の両方が空です")
@@ -153,7 +125,7 @@ class GeminiService:
 最適化された英語プロンプト:
             """.strip()
             
-            # Gemini 2.5 Flash での生成（速度重視設定）
+            # Gemini 2.5 Flash での生成（簡潔出力・速度重視設定）
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=full_prompt,
@@ -163,20 +135,19 @@ class GeminiService:
                     ),
                     temperature=0.3,  # 一貫性重視
                     top_p=0.8,
-                    max_output_tokens=512  # FLUX.1制限準拠
+                    max_output_tokens=120  # 簡潔出力
                 )
             )
             
             optimized_prompt = response.text.strip()
+            # 余分な改行・空白の正規化
+            optimized_prompt = ' '.join(optimized_prompt.split())
             
-            # 効果固有のプロンプト拡張を後付け
             if effect_type != 'none':
                 optimized_prompt = self._apply_effect_to_prompt(optimized_prompt, effect_type)
             
-            # 512トークン制限確認（概算）
-            if len(optimized_prompt.split()) > 450:  # 安全マージン
-                optimized_prompt = ' '.join(optimized_prompt.split()[:450])
-                logger.warning("プロンプトを512トークン制限内に調整しました")
+            # 顔の向き固定フレーズを後付け（既出チェックあり）
+            optimized_prompt = self._ensure_orientation_lock(optimized_prompt)
             
             logger.info(f"プロンプト最適化成功 (効果: {effect_type}): {len(optimized_prompt.split())} words")
             return optimized_prompt
@@ -226,38 +197,22 @@ class GeminiService:
         if effect_type != 'none':
             fallback_prompt = self._apply_effect_to_prompt(fallback_prompt, effect_type)
         
+        # フォールバックにも顔の向き固定を適用
+        fallback_prompt = self._ensure_orientation_lock(fallback_prompt)
+        
         logger.info(f"フォールバックプロンプトを生成しました (効果: {effect_type})")
         return fallback_prompt
 
-    def _get_effect_instructions(self, effect_type: str) -> str:
+    def _ensure_orientation_lock(self, base_prompt: str) -> str:
         """
-        特定効果のシステムプロンプト指示を取得
-        
-        Args:
-            effect_type (str): 効果タイプ ('bright_bg', 'glossy_hair', 'none')
-            
-        Returns:
-            str: 効果固有の指示文
+        顔の向きが変わらないように固定フレーズを常に後付けする
         """
-        effect_instructions = {
-            'bright_bg': """
-**明るいシンプル背景効果**: 
-- 元の画像の人物、服装、髪型、表情は**一切変更せず**、背景のみを明るくシンプルなスタジオ背景に差し替える
-- 背景は均一に照明されたクリーンな白いコンクリート壁や、ソフトなテクスチャの白い壁面が推奨
-- 人物への照明は自然で柔らかな明るい拡散光とし、影は最小限に抑える
-- **重要**: 人物の顔、肌、髪、髪型、表情、身体のポーズ、構図は100%同一に保つ
-            """,
-            'glossy_hair': """
-**髪のツヤ感向上効果**:
-- 元の画像の人物、背景、髪型、髪の長さ、髪色は**一切変更せず**、髪の質感のみを向上させる
-- 髪に健康的で自然な光沢とツヤを追加し、滑らかで輝く仕上がりにする
-- 毛流れや髪のボリューム感は元画像と同一に保つ
-- 過度に人工的でない、自然で上品な輝きを演出する
-- **重要**: 顔、表情、背景、服装、全体の構図は100%変更しない
-            """
-        }
-        
-        return effect_instructions.get(effect_type, "")
+        orientation_lock = (
+            " Keep the face orientation exactly the same as the original image. "
+        )
+        return base_prompt + orientation_lock
+
+    
     
     def _apply_effect_to_prompt(self, base_prompt: str, effect_type: str) -> str:
         """
@@ -271,8 +226,9 @@ class GeminiService:
             str: 効果適用済みプロンプト
         """
         effect_prompts = {
-            'bright_bg': " Replace only the background with a softly textured white concrete wall. The wall should be evenly lit by bright, diffuse natural daylight with no visible shadows. Do not modify the subject in any way — the face, skin, hair, hairstyle, expression, lighting, and composition must remain 100% unchanged. Only the background should be affected.",
-            'glossy_hair': " Enhance only the hair texture to add healthy, natural shine and glossiness while keeping the exact same hairstyle, length, and color. The hair should have a smooth, lustrous finish with natural light reflection. Do not change the face, expression, background, clothing, or overall composition in any way."
+            'bright_bg': " Replace only the background with a softly textured white concrete wall. The wall should be evenly lit by bright, diffuse natural daylight with no visible shadows.",
+            'glossy_hair': " Enhance the hair with high-gloss gel styling effect while maintaining the exact same facial features and hairstyle shape. Add glossy, wet-look finish to the hair strands with strong light reflections and mirror-like shine, as if professional styling gel or pomade has been applied. Keep all hair textures smooth and sleek with visible light catchments on hair surface. Maintain natural hair color and preserve the original hair length and cut style completely unchanged.",
+            'back_style': " Generate a back view portrait of the same person maintaining identical hairstyle, hair color, hair length, and all personal characteristics. Show the rear perspective of the haircut with the same styling, texture, and professional finish. Keep consistent lighting conditions and salon environment. Preserve the hair's layering, graduation, and styling details visible from behind. Maintain the same clothing and overall composition quality."
         }
         
         effect_addition = effect_prompts.get(effect_type, "")

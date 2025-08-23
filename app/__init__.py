@@ -10,8 +10,6 @@ eventlet.monkey_patch(all=False, socket=True) # SocketIOのために必要
 from flask import Flask, current_app, send_from_directory
 from flask_socketio import SocketIO
 from flask_wtf.csrf import CSRFProtect
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from celery import Celery, Task
 from dotenv import load_dotenv
 import redis # Redisライブラリをインポート
@@ -26,8 +24,6 @@ logger = logging.getLogger(__name__)
 # Global extensions
 socketio = SocketIO()
 csrf = CSRFProtect()
-# Limiterの初期化 (key_funcのみ指定し、storage_uriはcreate_app内で設定)
-limiter = Limiter(key_func=get_remote_address)
 celery = Celery(__name__)
 
 
@@ -113,26 +109,18 @@ def create_app(config_object_name: str = None): # 設定オブジェクト名を
     # Redis接続確認とレート制限ストレージ設定
     redis_available = False
     redis_url_from_env = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    app.logger.info(f"Flask App: Attempting to use Redis for rate limiting & SocketIO. REDIS_URL from env: {redis_url_from_env}")
+    app.logger.info(f"Flask App: Attempting to use Redis for SocketIO message queue. REDIS_URL from env: {redis_url_from_env}")
 
     try:
         # from_url は接続文字列からRedisクライアントを作成
         # socket_timeoutとsocket_connect_timeoutを短く設定して、接続できない場合に早く失敗するようにする
         redis_client_test = redis.from_url(redis_url_from_env, socket_timeout=2, socket_connect_timeout=2)
         redis_client_test.ping() # これが成功すればRedisサーバーは応答している
-        
-        # Flask-Limiterがこの設定キーを自動的に参照する
-        app.config['RATELIMIT_STORAGE_URI'] = redis_url_from_env # 新しい正しいキー
-        app.logger.info(f"Flask App: Successfully connected to Redis at {redis_url_from_env}. Rate limiting will use Redis.")
         redis_available = True
     except Exception as e: # redis.exceptions.ConnectionError, redis.exceptions.TimeoutError, redis.exceptions.AuthenticationErrorなど
-        app.logger.error(f"Flask App: Failed to connect to Redis at {redis_url_from_env} for rate limiting. Error: {e}", exc_info=True)
-        app.logger.warning("Flask App: Rate limiting will use in-memory storage (not recommended for production).")
-        # RATELIMIT_STORAGE_URL を設定しないか、明示的にメモリを指定することもできるが、
-        # 設定しない場合はFlask-Limiterがデフォルトでインメモリを使用し警告を出す。
+        app.logger.error(f"Flask App: Failed to connect to Redis at {redis_url_from_env}. Error: {e}", exc_info=True)
 
-    # レート制限の初期化 (RATELIMIT_STORAGE_URI設定後)
-    limiter.init_app(app)
+    
     
     # SocketIO初期化
     socketio_config = {
@@ -223,10 +211,7 @@ def create_app(config_object_name: str = None): # 設定オブジェクト名を
         app.logger.warning(f"File too large: {e.description if hasattr(e, 'description') else str(e)}")
         return {"error": "ファイルサイズが大きすぎます。10MB以下のファイルをアップロードしてください。"}, 413
     
-    @app.errorhandler(429) # TooManyRequests (Rate Limit Exceeded)
-    def ratelimit_handler(e):
-        app.logger.warning(f"Rate limit exceeded: {e.description if hasattr(e, 'description') else str(e)}")
-        return {"error": "リクエスト数が制限を超えました。しばらくお待ちください。"}, 429
+
 
     @app.errorhandler(Exception) # 未捕捉の一般的な例外
     def handle_generic_exception(e):

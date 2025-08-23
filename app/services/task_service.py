@@ -253,7 +253,7 @@ class TaskService:
     def _execute_multiple_generation(self, user_id: str, file_path: str,
                                      japanese_prompt: str, original_filename: str,
                                      count: int, base_seed: Optional[int], task_id: str,
-                                     mode: str = 'kontext', mask_data: str = None):
+                                     mode: str = 'kontext', mask_data: str = None, effect_type: str = 'none'):
         """複数画像生成のコアロジック"""
         emit_progress = lambda data: self._emit_progress(user_id, data)
 
@@ -262,7 +262,7 @@ class TaskService:
             'message': 'プロンプトを最適化しています...', 'count': count, 'type': 'multiple'
         })
 
-        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt)
+        optimized_prompt, image_base64 = self._prepare_generation_assets(file_path, japanese_prompt, effect_type=effect_type)
 
         emit_progress({
             'task_id': task_id, 'status': 'processing', 'stage': 'image_generation',
@@ -314,7 +314,7 @@ class TaskService:
                     "id": str(uuid.uuid4()), "task_id": task_id, "flux_task_id": saved.get('task_id'),
                     "original_filename": original_filename, "uploaded_path": file_path, "generated_path": saved['path'],
                     "japanese_prompt": japanese_prompt, "optimized_prompt": optimized_prompt, "index": saved['index'],
-                    "seed": saved.get('seed'), "is_multiple": True, "generation_count": count
+                    "seed": saved.get('seed'), "is_multiple": True, "generation_count": count, "effect_type": effect_type
                 }
                 self.session_service.add_generated_image(user_id, generation_info)
                 successful_images.append({
@@ -366,19 +366,20 @@ class TaskService:
     
     def _generate_multiple_hairstyles_sync(self, user_id: str, file_path: str, 
                                          japanese_prompt: str, original_filename: str, 
-                                         task_id: str, count: int = 1, base_seed: Optional[int] = None) -> str:
+                                         task_id: str, count: int = 1, base_seed: Optional[int] = None, 
+                                         effect_type: str = 'none') -> str:
         """複数画像同期ヘアスタイル生成（Celery利用不可時）"""
         try:
             # アクティブタスク追加
             task_info = {
                 "task_id": task_id, "type": "multiple_hairstyle_generation_sync",
                 "japanese_prompt": japanese_prompt, "original_filename": original_filename,
-                "count": count, "base_seed": base_seed, "status": "processing"
+                "count": count, "base_seed": base_seed, "effect_type": effect_type, "status": "processing"
             }
             self.session_service.add_active_task(user_id, task_info)
             
             # コアロジック実行
-            self._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id)
+            self._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id, effect_type=effect_type)
 
         except Exception as e:
             logger.error(f"複数画像同期生成エラー: {e}")
@@ -551,13 +552,14 @@ def register_celery_tasks(celery_app: Celery):
                                         japanese_prompt: str, original_filename: str, 
                                         count: int = 1, base_seed: Optional[int] = None,
                                         mode: str = 'kontext',
-                                        mask_data: str = None):
+                                        mask_data: str = None,
+                                        effect_type: str = 'none'):
         """複数画像非同期ヘアスタイル生成タスク（Celery用）"""
         task_id = self.request.id
         task_service = TaskService(celery_app) # サービスインスタンス作成
         
         try:
-            return task_service._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id, mode, mask_data)
+            return task_service._execute_multiple_generation(user_id, file_path, japanese_prompt, original_filename, count, base_seed, task_id, mode, mask_data, effect_type)
         except Exception as e:
             logger.error(f"複数画像Celeryタスクエラー: {e}")
             task_service._emit_progress(user_id, {
