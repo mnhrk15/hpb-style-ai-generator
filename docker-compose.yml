@@ -1,7 +1,7 @@
 services:
   hairstyle_web:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
     container_name: hairstyle_web_app
     restart: always
@@ -17,7 +17,7 @@ services:
 
   hairstyle_worker:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
     container_name: hairstyle_worker_app
     restart: always
