@@ -1,0 +1,73 @@
+# このファイルは、Hair Style AI GeneratorをRender上でデプロイするためのインフラ構成を定義します。
+# https://render.com/docs/blueprint-spec
+
+services:
+  # 1. Redis: セッションとタスクキューを管理
+  - type: redis
+    name: redis-cache
+    region: oregon # or singapore, frankfurt
+    plan: starter # 無料プランはメモリが少ないため、本番はStarter以上を推奨
+
+  # 2. Celery Worker: 非同期でAI画像生成を実行
+  - type: worker
+    name: hairstyle-app-worker
+    env: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: starter # CPU/メモリを必要とするため有料プラン必須
+    startCommand: "celery -A run.celery_app worker --loglevel=info --concurrency=2"
+    
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION # Dockerfileと合わせる
+        value: 3.12
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis-cache
+          property: connectionString
+          
+    envVarGroups:
+      - hairstyle-app-secrets # APIキーなどを外部から注入
+      
+    disks:
+      - name: uploads-disk
+        mountPath: /app/app/static/uploads
+        sizeGB: 10
+      - name: generated-disk
+        mountPath: /app/app/static/generated
+        sizeGB: 20
+
+  # 3. Web App: ユーザーからのリクエストを受け付ける
+  - type: web
+    name: hairstyle-app-web
+    env: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: starter
+    healthCheckPath: /api/health
+    
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis-cache
+          property: connectionString
+          
+    envVarGroups:
+      - hairstyle-app-secrets
+      
+    disks:
+      - name: uploads-disk
+        mountPath: /app/app/static/uploads
+        sizeGB: 10
+      - name: generated-disk
+        mountPath: /app/app/static/generated
+        sizeGB: 20
