@@ -18,6 +18,7 @@ sys.path.insert(0, project_root)
 
 from app import create_app, socketio, create_celery_app
 from app.config import get_config
+from app.services.task_service import register_celery_tasks
 
 
 def setup_logging():
@@ -95,6 +96,7 @@ def validate_secret_key(app):
 # アプリケーションとCeleryインスタンスの作成
 app = create_app()
 celery_app = create_celery_app(app)
+register_celery_tasks(celery_app)
 
 
 if __name__ == '__main__':
@@ -133,4 +135,4 @@ if __name__ == '__main__':
         print("\n🛑 アプリケーションを停止しました。")
     except Exception as e:
         print(f"\n❌ アプリケーション起動エラー: {e}")
-        sys.exit(1) 
+        sys.exit(1)
