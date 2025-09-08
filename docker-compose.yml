@@ -13,7 +13,12 @@ services:
     env_file:
       - .env
     networks:
-      - caddy_network # 共有ネットワークに接続
+      - caddy_network
+    environment:
+      # REDIS_URLをコンテナ名で指定し、パスワードを.envから読み込む
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
 
   hairstyle_worker:
     build:
@@ -30,7 +35,12 @@ services:
     env_file:
       - .env
     networks:
-      - caddy_network # 共有ネットワークに接続
+      - caddy_network
+    # --- Workerにも同じ環境変数を設定 ---
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@hairstyle_redis_app:6379/0
 
   hairstyle_redis:
     image: redis:7-alpine
@@ -42,7 +52,7 @@ services:
     env_file:
       - .env
     networks:
-      - caddy_network # 共有ネットワークに接続
+      - caddy_network
 
 volumes:
   hairstyle_uploads:
