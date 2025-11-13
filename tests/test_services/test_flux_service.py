@@ -17,7 +17,7 @@ class TestFluxService:
         with patch.dict('os.environ', {'BFL_API_KEY': 'test-bfl-key'}):
             service = FluxService()
             assert service.api_key == 'test-bfl-key'
-            assert service.base_url == "https://api.us1.bfl.ai/v1"
+            assert service.base_url == "https://api.bfl.ai/v1"
     
     def test_init_without_api_key(self):
         """API キー未設定時の警告テスト"""
@@ -32,17 +32,18 @@ class TestFluxService:
         # Mock response
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"id": "test_task_id_123"}
+        mock_response.json.return_value = {"id": "test_task_id_123", "polling_url": "https://api.bfl.ai/v1/poll/test_task_id_123"}
         mock_post.return_value = mock_response
         
         with patch.dict('os.environ', {'BFL_API_KEY': 'test-key'}):
             service = FluxService()
-            task_id = service.generate_hair_style(
+            task_id, polling_url = service.generate_hair_style(
                 "base64_image_data",
                 "Transform hairstyle to short bob"
             )
         
         assert task_id == "test_task_id_123"
+        assert polling_url == "https://api.bfl.ai/v1/poll/test_task_id_123"
         
         # API呼び出しの検証
         mock_post.assert_called_once()
@@ -52,7 +53,7 @@ class TestFluxService:
         args, kwargs = call_args
         
         # エンドポイント確認
-        assert args[0] == "https://api.us1.bfl.ai/v1/flux-kontext-pro"
+        assert args[0] == "https://api.bfl.ai/v1/flux-kontext-pro"
         
         # ヘッダー確認
         headers = kwargs['headers']
@@ -70,12 +71,12 @@ class TestFluxService:
         """オプションパラメータ付き画像生成テスト"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"id": "test_task_id_456"}
+        mock_response.json.return_value = {"id": "test_task_id_456", "polling_url": "https://api.bfl.ai/v1/poll/test_task_id_456"}
         mock_post.return_value = mock_response
         
         with patch.dict('os.environ', {'BFL_API_KEY': 'test-key'}):
             service = FluxService()
-            task_id = service.generate_hair_style(
+            task_id, polling_url = service.generate_hair_style(
                 "base64_image_data",
                 "Test prompt",
                 seed=12345,
@@ -138,8 +139,8 @@ class TestFluxService:
         # 位置引数とキーワード引数の確認
         args, kwargs = call_args
         
-        # エンドポイント確認
-        assert args[0] == "https://api.us1.bfl.ai/v1/get_result"
+        # エンドポイント確認（従来の方法を使用する場合）
+        assert args[0] == "https://api.bfl.ai/v1/get_result"
         
         # パラメータ確認
         assert kwargs['params'] == {"id": "test_task_id"}
@@ -357,13 +358,13 @@ class TestFluxService:
             service = FluxService()
             
             # 1. 生成開始
-            task_id = service.generate_hair_style(
+            task_id, polling_url = service.generate_hair_style(
                 "test_base64_image",
                 "Transform to short bob style"
             )
             
             # 2. 結果取得
-            result = service.get_result(task_id)
+            result = service.get_result(task_id, polling_url=polling_url)
             
             assert task_id == "workflow_test_id"
             assert result["status"] == "Ready"

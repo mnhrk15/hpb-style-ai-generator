@@ -98,7 +98,7 @@ def mock_flux_service():
     """Flux Serviceのテスト用Mock"""
     with patch('app.services.flux_service.FluxService') as mock:
         instance = mock.return_value
-        instance.generate_hair_style.return_value = "test_task_id_123"
+        instance.generate_hair_style.return_value = ("test_task_id_123", "https://api.bfl.ai/v1/poll/test_task_id_123")
         instance.get_result.return_value = {
             "status": "Ready",
             "result": {

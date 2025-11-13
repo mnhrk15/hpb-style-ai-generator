@@ -24,7 +24,7 @@ class FluxService:
         """FLUX.1 Kontextサービスの初期化"""
         # アプリケーションコンテキストがないため、os.getenvで読み込む
         self.api_key = os.getenv('BFL_API_KEY')
-        self.base_url = os.getenv('FLUX_API_BASE_URL', "https://api.us1.bfl.ai/v1")
+        self.base_url = os.getenv('FLUX_API_BASE_URL', "https://api.bfl.ai/v1")
         
         # API制限設定（要件定義書準拠）
         self.max_wait_time = int(os.getenv('FLUX_MAX_WAIT_TIME', '300'))  # 5分
@@ -37,7 +37,9 @@ class FluxService:
     def generate_hair_style(self, image_base64: str, optimized_prompt: str, 
                           seed: Optional[int] = None, 
                           safety_tolerance: int = 2,
-                          output_format: str = "jpeg") -> Optional[str]:
+                          output_format: str = "jpeg",
+                          aspect_ratio: Optional[str] = None,
+                          prompt_upsampling: bool = False) -> Tuple[str, Optional[str]]:
         """
         ヘアスタイル画像生成
         
@@ -47,9 +49,11 @@ class FluxService:
             seed (int, optional): 再現性のためのシード値
             safety_tolerance (int): 安全性許容度（0=厳格、6=寛容、デフォルト2）
             output_format (str): 出力フォーマット（"jpeg" or "png"）
+            aspect_ratio (str, optional): アスペクト比（例: "16:9", "1:1"）。デフォルトは入力画像に合わせる
+            prompt_upsampling (bool): プロンプトのアップサンプリングを行うか（デフォルトFalse）
             
         Returns:
-            str: タスクID（非同期処理用）
+            tuple: (タスクID, polling_url) polling_urlはNoneの場合あり
             
         Raises:
             Exception: API呼び出しエラー時
@@ -67,12 +71,17 @@ class FluxService:
         payload = {
             "prompt": optimized_prompt,
             "input_image": image_base64,
-            "seed": seed,  # 再現性のため必要に応じて設定
             "safety_tolerance": safety_tolerance,  # 0=厳格、6=寛容（デフォルト2）
             "output_format": output_format,  # "jpeg" または "png"
-            "webhook_url": None,  # 非同期通知用（オプション）
-            "webhook_secret": None  # Webhook認証用（オプション）
+            "prompt_upsampling": prompt_upsampling,  # プロンプトアップサンプリング
         }
+        
+        # オプションパラメータの追加
+        if seed is not None:
+            payload["seed"] = seed
+        if aspect_ratio is not None:
+            payload["aspect_ratio"] = aspect_ratio
+        # webhookは未使用のため省略
         
         headers = {
             "accept": "application/json",
@@ -87,8 +96,9 @@ class FluxService:
             if response.status_code == 200:
                 result = response.json()
                 task_id = result.get("id")
-                logger.info(f"FLUX.1 Kontext 生成タスク開始: {task_id}")
-                return task_id
+                polling_url = result.get("polling_url")  # 公式ドキュメントに従ってpolling_urlを取得
+                logger.info(f"FLUX.1 Kontext 生成タスク開始: {task_id}, polling_url: {polling_url}")
+                return task_id, polling_url
             else:
                 error_msg = f"API Error: {response.status_code} - {response.text}"
                 logger.error(error_msg)
@@ -98,16 +108,17 @@ class FluxService:
             logger.error(f"FLUX.1 Kontext API リクエストエラー: {e}")
             raise Exception(f"APIリクエスト失敗: {e}")
     
-    def get_result(self, task_id: str) -> Dict:
+    def get_result(self, task_id: str, polling_url: Optional[str] = None) -> Dict:
         """
         結果取得（ポーリング用）
         
         Args:
             task_id (str): タスクID
+            polling_url (str, optional): ポーリングURL（公式推奨方法）。指定されない場合は従来の方法を使用
             
         Returns:
             dict: API結果
-                - status: "Processing", "Queued", "Ready", "Error", "Content Moderated"
+                - status: "Processing", "Queued", "Ready", "Error", "Failed", "Content Moderated"
                 - result: 成功時は画像URLを含む
                 
         Raises:
@@ -116,13 +127,20 @@ class FluxService:
         if not self.api_key:
             raise Exception("BFL_API_KEY が設定されていません")
         
-        url = f"{self.base_url}/get_result"
         headers = {"accept": "application/json", "x-key": self.api_key}
-        params = {"id": task_id}
         
         try:
             timeout = current_app.config.get('FLUX_REQUEST_TIMEOUT_GET', 10)
-            response = requests.get(url, headers=headers, params=params, timeout=timeout)
+            
+            # 公式ドキュメントに従い、polling_urlが提供されている場合はそれを使用
+            if polling_url:
+                # polling_urlに直接GETリクエスト（パラメータ不要）
+                response = requests.get(polling_url, headers=headers, timeout=timeout)
+            else:
+                # 後方互換性のため、従来の方法もサポート
+                url = f"{self.base_url}/get_result"
+                params = {"id": task_id}
+                response = requests.get(url, headers=headers, params=params, timeout=timeout)
             
             if response.status_code == 200:
                 result = response.json()
@@ -138,6 +156,7 @@ class FluxService:
             raise Exception(f"結果取得失敗: {e}")
     
     def poll_until_ready(self, task_id: str, 
+                        polling_url: Optional[str] = None,
                         max_wait_time: Optional[int] = None,
                         progress_callback: Optional[callable] = None) -> Tuple[str, Dict]:
         """
@@ -145,6 +164,7 @@ class FluxService:
         
         Args:
             task_id (str): タスクID
+            polling_url (str, optional): ポーリングURL（公式推奨方法）
             max_wait_time (int, optional): 最大待機時間（秒、デフォルト300秒）
             progress_callback (callable, optional): 進捗通知コールバック
             
@@ -162,7 +182,7 @@ class FluxService:
         
         while time.time() - start_time < max_wait_time:
             try:
-                result = self.get_result(task_id)
+                result = self.get_result(task_id, polling_url=polling_url)
                 status = result.get("status")
                 attempt += 1
                 
@@ -182,7 +202,8 @@ class FluxService:
                     logger.info(f"FLUX.1 Kontext 生成完了: {task_id}")
                     return image_url, result
                 
-                elif status in ["Error", "Content Moderated", "Request Moderated"]:
+                elif status in ["Error", "Failed", "Content Moderated", "Request Moderated"]:
+                    # 公式ドキュメントに従い、"Failed"もエラーとして扱う
                     error_detail = result.get("result", {}).get("message", "詳細不明")
                     error_msg = f"生成失敗: {status} - {error_detail}"
                     logger.error(error_msg)
@@ -318,7 +339,7 @@ class FluxService:
                     seed = base_seed + i
                 
                 # 個別タスク開始
-                task_id = self.generate_hair_style(
+                task_id, polling_url = self.generate_hair_style(
                     image_base64=image_base64,
                     optimized_prompt=optimized_prompt,
                     seed=seed,
@@ -328,6 +349,7 @@ class FluxService:
                 
                 task_ids.append({
                     'task_id': task_id,
+                    'polling_url': polling_url,
                     'index': i + 1,
                     'seed': seed,
                     'status': 'queued'
@@ -396,7 +418,8 @@ class FluxService:
                     continue
                 
                 try:
-                    result = self.get_result(task_id)
+                    polling_url = task.get('polling_url')
+                    result = self.get_result(task_id, polling_url=polling_url)
                     status = result.get("status")
                     
                     # 結果のインデックスを見つける
@@ -411,7 +434,8 @@ class FluxService:
                         completed_tasks.add(task_id)
                         logger.info(f"タスク完了: {task['index']}/{len(task_infos)} - {task_id}")
                     
-                    elif status in ["Error", "Content Moderated", "Request Moderated"]:
+                    elif status in ["Error", "Failed", "Content Moderated", "Request Moderated"]:
+                        # 公式ドキュメントに従い、"Failed"もエラーとして扱う
                         error_detail = result.get("result", {}).get("message", "詳細不明")
                         results[result_idx].update({
                             'status': 'failed',

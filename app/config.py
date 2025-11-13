@@ -35,7 +35,7 @@ class BaseConfig:
     FLUX_MAX_WAIT_TIME = int(os.getenv('FLUX_MAX_WAIT_TIME', '300'))
     FLUX_POLLING_INTERVAL = float(os.getenv('FLUX_POLLING_INTERVAL', '1.5'))
     FLUX_PROMPT_MAX_TOKENS = int(os.getenv('FLUX_PROMPT_MAX_TOKENS', '512'))
-    FLUX_API_BASE_URL = os.getenv('FLUX_API_BASE_URL', "https://api.us1.bfl.ai/v1")
+    FLUX_API_BASE_URL = os.getenv('FLUX_API_BASE_URL', "https://api.bfl.ai/v1")
     FLUX_REQUEST_TIMEOUT_POST = int(os.getenv('FLUX_REQUEST_TIMEOUT_POST', '30'))
     FLUX_REQUEST_TIMEOUT_GET = int(os.getenv('FLUX_REQUEST_TIMEOUT_GET', '10'))
     FLUX_MAX_PARALLEL_GENERATIONS = int(os.getenv('FLUX_MAX_PARALLEL_GENERATIONS', '5'))
