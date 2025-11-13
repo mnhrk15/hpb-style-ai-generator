@@ -194,8 +194,7 @@ class TaskService:
         if mode == 'fill' and mask_data:
             flux_task_id, polling_url = self.flux_service.generate_with_fill(image_base64, mask_data, optimized_prompt)
         else:
-            flux_task_id = self.flux_service.generate_hair_style(image_base64, optimized_prompt)
-            polling_url = None
+            flux_task_id, polling_url = self.flux_service.generate_hair_style(image_base64, optimized_prompt)
         
         def progress_callback(progress_info):
             emit_progress({
@@ -207,7 +206,7 @@ class TaskService:
             })
         
         image_url, result_detail = self.flux_service.poll_until_ready(
-            flux_task_id, progress_callback=progress_callback
+            flux_task_id, polling_url=polling_url, progress_callback=progress_callback
         )
         
         emit_progress({
@@ -293,8 +292,9 @@ class TaskService:
         if mode == 'fill' and mask_data:
             results = []
             for info in task_infos:
+                polling_url = info.get('polling_url')
                 image_url, result_detail = self.flux_service.poll_until_ready(
-                    info['id'], progress_callback=progress_callback
+                    info['id'], polling_url=polling_url, progress_callback=progress_callback
                 )
                 results.append({'sample': image_url, 'task_id': info['id']})
         else:
